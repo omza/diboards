@@ -3,4 +3,4 @@ flask-restplus==0.10.1
 Flask-SQLAlchemy==2.2
 SQLAlchemy==1.1.9
 PyQRCode==1.2.1
-pyping==0.0.5
+pypng==0.0.18

@@ -270,3 +270,4 @@ diboards.venv/
 
 # Flask config
 instance/
+volume/

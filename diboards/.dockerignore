@@ -1,1 +1,12 @@
+# Python Tools for Visual Studio (PTVS)
+__pycache__/
+*.pyc
 
+# Virtual environment
+diboards.venv/
+.venv
+volume/
+
+# VS Project files
+*.pyproj
+*.pyproj.user
