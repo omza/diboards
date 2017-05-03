@@ -2,9 +2,9 @@ FROM python:3.6.1-alpine
 MAINTAINER oliver@app-workshop.de
 
 RUN mkdir -p /usr/src/app
-	&& mkdir -p /usr/qr
-	&& mkdir -p /usr/incomming
-	&& mkdir -p /usr/outgoing
+RUN mkdir -p /usr/qr 
+RUN mkdir -p /usr/incomming
+RUN mkdir -p /usr/outgoing
 
 WORKDIR /usr/src/app
 
