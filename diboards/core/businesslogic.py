@@ -1,8 +1,8 @@
 from core import db
 from core.database import Board
 from pyqrcode import *
-from settings import FLASK_SERVER_NAME
 import os
+from flask import current_app as app
 
 # Bulletinboard Logic sector
 
@@ -36,7 +36,7 @@ def create_board(data):
     qrfile = qrpath + '/qr-' + board.uuid + '.png'
     print(qrfile)
 
-    qrlink = 'http://' + FLASK_SERVER_NAME + qrfile
+    qrlink = 'http://' + app.config['SERVER_NAME'] + qrfile
     print(qrlink)
 
     url = pyqrcode.create(qrlink)
