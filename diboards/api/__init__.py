@@ -3,13 +3,14 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from .boards import api as boards_ns
 from .apitools import api as tools_ns
+from flask import current_app as app
 
 # register flask_restplus api
 api = Api(
     title='di.boards api',
     version='1.0',
     description='bring your real world bulletin board in digitial life',
-    doc='/doc/',
+    # doc='/doc/',
     # All API metadatas
 )
 
@@ -34,7 +35,7 @@ def default_error_handler(e):
     message = 'An unhandled exception occurred.'
     #log.exception(message)
 
-    if not settings.FLASK_DEBUG:
+    if not app.config['DEBUG']:
         return {'message': message}, 500
 
 

@@ -36,7 +36,7 @@ def create_board(data):
     qrfile = qrpath + '/qr-' + board.uuid + '.png'
     print(qrfile)
 
-    qrlink = 'http://' + app.config['SERVER_NAME'] + qrfile
+    qrlink = qrfile
     print(qrlink)
 
     url = pyqrcode.create(qrlink)
