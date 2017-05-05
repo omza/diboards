@@ -1,5 +1,5 @@
 from core import db
-from core.database import Board
+from core.database import Board, User
 from pyqrcode import *
 import os
 from flask import current_app as app
@@ -27,11 +27,11 @@ def create_board(data):
 
     # create qr code an save as png file
 
-    qrpath = '/volume/' + board.uuid
-    print('.' + qrpath)
-    if not os.path.exists('.' + qrpath):
-        os.makedirs('.' + qrpath)
-        os.chmod('.' + qrpath, 0o755)
+    qrpath = app.config['DIBOARDS_PATH_QR'] + board.uuid
+    print(qrpath)
+    if not os.path.exists(qrpath):
+        os.makedirs(qrpath)
+        os.chmod(qrpath, 0o755)
 
     qrfile = qrpath + '/qr-' + board.uuid + '.png'
     print(qrfile)
@@ -40,7 +40,7 @@ def create_board(data):
     print(qrlink)
 
     url = pyqrcode.create(qrlink)
-    url.png('.' + qrfile, scale=10, module_color=(255, 45, 139, 255), background=(255, 255, 255, 255), quiet_zone=4)
+    url.png(qrfile, scale=10, module_color=(255, 45, 139, 255), background=(255, 255, 255, 255), quiet_zone=4)
     board.qrcode = qrlink
 
     # db update
@@ -48,16 +48,39 @@ def create_board(data):
     db.session.commit()
 
     return board
-
-
 def update_board(uuid, data):
     category = Category.query.filter(Category.id == category_id).one()
     category.name = data.get('name')
     db.session.add(category)
     db.session.commit()
-
-
 def delete_board(uuid):
     category = Category.query.filter(Category.id == category_id).one()
     db.session.delete(category)
     db.session.commit()
+    
+    
+# User Logic sector
+
+def delete_user(uuid):
+    category = Category.query.filter(Category.id == category_id).one()
+    db.session.delete(category)
+    db.session.commit()
+def update_user(uuid, data):
+    category = Category.query.filter(Category.id == category_id).one()
+    category.name = data.get('name')
+    db.session.add(category)
+    db.session.commit()
+def create_user(data):
+
+    #parsing
+    user = User()
+
+    #hashing password
+
+
+    # db update
+    db.session.add(board)
+    db.session.commit()
+
+    return user
+

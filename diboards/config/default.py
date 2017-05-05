@@ -13,6 +13,7 @@ RESTPLUS_ERROR_404_HELP = True
 # SQLAlchemy settings
 SQLALCHEMY_DATABASE_URI = 'sqlite:////usr/db/db.diboards'
 SQLALCHEMY_TRACK_MODIFICATIONS = True
+SQLALCHEMY_COMMIT_ON_TEARDOWN = True
 
 # di.boards settings
 DIBOARDS_PATH_QR = '/usr/qr/'
