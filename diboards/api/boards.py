@@ -1,7 +1,7 @@
 from flask import request
 from flask_restplus import Namespace, Resource, fields
-from core.businesslogic import create_board, update_board, delete_board
-from core.database import Board
+from .core import create_board, update_board, delete_board
+from database.models import Board
 
 api = Namespace('boards', description='bulletin board related operations')
 

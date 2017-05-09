@@ -1,11 +1,12 @@
-from core import db
-from core.database import Board, User
-from pyqrcode import *
 import os
+from database import db
+from database.models import Board, User
+from pyqrcode import *
 from flask import current_app as app
 
-# Bulletinboard Logic sector
 
+# Bulletinboard Logic sector
+# --------------------------------------
 def create_board(data):
 
     # Parse data and create Board instance
@@ -48,11 +49,13 @@ def create_board(data):
     db.session.commit()
 
     return board
+
 def update_board(uuid, data):
     category = Category.query.filter(Category.id == category_id).one()
     category.name = data.get('name')
     db.session.add(category)
     db.session.commit()
+
 def delete_board(uuid):
     category = Category.query.filter(Category.id == category_id).one()
     db.session.delete(category)
@@ -60,27 +63,36 @@ def delete_board(uuid):
     
     
 # User Logic sector
-
+# ----------------------------------------
 def delete_user(uuid):
     category = Category.query.filter(Category.id == category_id).one()
     db.session.delete(category)
     db.session.commit()
+    pass
+
 def update_user(uuid, data):
     category = Category.query.filter(Category.id == category_id).one()
     category.name = data.get('name')
     db.session.add(category)
     db.session.commit()
+
 def create_user(data):
-
-    #parsing
-    user = User()
-
-    #hashing password
-
+    
+    # user already exist ?
+    if User.query.filter_by(username = data.get('username')).first() is not None:
+        user = None
+        return user
+    
+    # create user instance
+    user = User(data.get('username'), data.get('password'), data.get('name'))
 
     # db update
-    db.session.add(board)
+    db.session.add(user)
     db.session.commit()
 
     return user
 
+# Create Database from scratch
+def reset_database():
+    db.drop_all()
+    db.create_all()

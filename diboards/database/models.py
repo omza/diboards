@@ -1,9 +1,11 @@
-from core import db
-from passlib.apps import custom_app_context as pwd_context
+from database import db
 from datetime import datetime
+from passlib.apps import custom_app_context as pwd_context
 import uuid
 
 # board db model
+# ----------------------------------------------------------------------------
+
 class Board(db.Model):
     __tablename__ = 'board'
     id = db.Column(db.Integer, primary_key=True)
@@ -56,6 +58,8 @@ class Board(db.Model):
 
 
 # user db model
+# -------------------------------------------------------------------------
+
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key = True)
@@ -63,15 +67,24 @@ class User(db.Model):
     username = db.Column(db.String(32), index = True)
     password_hash = db.Column(db.String(128))
     active = db.Column(db.Boolean)
-
-    def hash_password(self, password):
-        self.password_hash = pwd_context.encrypt(password)
+    name = db.Column(db.String(32))
+    create_date = db.Column(db.DateTime)
 
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
 
+    def __init__(self, username, password, name='', active = False):
+        self.uuid = str(uuid.uuid4())
+        self.create_date = datetime.utcnow()
+        
+        self.username = username
+        self.password_hash = pwd_context.encrypt(password)
 
-# Create Database from scratch
-def reset_database():
-    db.drop_all()
-    db.create_all()
+        self.name = name
+        self.active = active
+
+
+
+
+
+

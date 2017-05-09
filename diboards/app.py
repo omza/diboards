@@ -2,7 +2,8 @@
 import os
 from flask import Flask
 from api import api
-from core import db
+from database import db
+
 
 # Flask app instance
 app = Flask(__name__, instance_relative_config=True)
@@ -17,7 +18,6 @@ def appconfig(flaskapp):
     # Load the file specified by the APP_CONFIG_FILE environment variable
     # Variables defined here will override those in the default configuration
     flaskapp.config.from_envvar('APP_CONFIG_FILE')
-
 
 def printenvironment(flaskapp):
     

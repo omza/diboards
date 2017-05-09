@@ -1,5 +1,5 @@
 from flask_restplus import Namespace, Resource, fields
-from core.database import reset_database
+from .core import reset_database
 
 api = Namespace('core', description='di.boards core tools api endpoints')
 

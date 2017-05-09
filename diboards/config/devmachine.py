@@ -11,5 +11,5 @@ RESTPLUS_MASK_SWAGGER = False
 RESTPLUS_ERROR_404_HELP = False
 
 # SQLAlchemy settings
-SQLALCHEMY_DATABASE_URI = 'sqlite:///db.diboards'
+SQLALCHEMY_DATABASE_URI = 'sqlite:///database/db.diboards'
 SQLALCHEMY_TRACK_MODIFICATIONS = True

@@ -1,55 +1,82 @@
-from flask import request
+from flask import request, g
 from flask_restplus import Namespace, Resource, fields
-from core.businesslogic import create_user, delete_user, update_user
-from core.database import  User
+from .core import create_user, delete_user, update_user
+from database.models import  User
+from auth import auth as basicauth
 
 api = Namespace('users', description='user related operations')
 
+
+# Serializers
+# ----------------------------------------------------------------------
 user = api.model('di.board users', {
     'id': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
     'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
-    'name': fields.String(required=True, description='Board name'),
-    'state': fields.String(required=True, description='Board location state'),
-    'city': fields.String(required=True, description='Board location City'),
-    'zip': fields.String(required=True, description='Board location zip code'),
-    'street': fields.String(required=True, description='Board location street'),
-    'housenumber': fields.String(required=True, description='Board location House Number'),
-    'building': fields.String(required=True, description='Board location Building description'),
-    
-    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
-    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
-    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
-    'gpstime': fields.DateTime(readOnly=True, required=False),
-
-    'active': fields.Boolean(required=True, description='Board is activated ?'),
-    'qrcode': fields.String(required=False, description='Link to QR Code'),
-
+    'username': fields.String(required=True, description='email'),
+    'password': fields.String(required=True, description='user password', attribute='password_hash'),
+    'active': fields.Boolean(required=False, description='user is activated ?'),
+    'name': fields.String(required=False, description='User name'),
     'create_date': fields.DateTime(readOnly=True, required=False), 
 })
 
+# Parsers
+# ----------------------------------------------------------------------
 
+
+
+# routes
+# ---------------------------------------------------------------------
 @api. route('/')
 class UserCollection(Resource):
-    @api.response(200, 'Bulletin Board successfully created.')
+    @api.doc('list_user')
+    @api.marshal_list_with(user)
+    def get(self):
+        '''List all users'''
+        userList = User.query.all()
+        return userList
+
+
+    @api.response(200, 'User signed successfully up.')
+    @api.response(400, 'User already signed up')
     @api.expect(user)
     @api.marshal_with(user)
-
     def post(self):
         data = request.json
-        dibuser = create_user(data)
-        return dibuser, 200
+        diboarduser = create_user(data)
+        if diboarduser is None:
+            api.abort(400, 'User already signed up')
+        else:
+            return diboarduser, 200
 
 
 @api.route('/<uuid>')
-@api.param('uuid', 'The unique identifier of a bulletin board')
-@api.response(404, 'Board not found')
-class BoardItem(Resource):
-    @api.doc('get_board')
-    @api.marshal_with(board)
+@api.param('uuid', 'The unique identifier of a di.board user')
+@api.response(401, 'Authentication Required')
+@api.response(403, 'Insufficient rights')
+@api.response(404, 'User not found')
+class UserItem(Resource):
+    @api.doc('get_user', security='basicauth')
+    @api.marshal_with(user)
+    @basicauth.login_required
     def get(self, uuid):
-        '''Fetch a board given its identifier'''
+        print('get_user')
+        AuthUser = g.user        
         
-        diboard = Board.query.filter(Board.uuid == uuid).one()
-        return diboard, 200
+        # Check authorized in user
+        if AuthUser is None:
+            print('None - abort')
+            api.abort(401)
         
-        api.abort(404)
+        # Check User Scope
+        if AuthUser.uuid != uuid:
+            print(AuthUser.uuid + ' != ' + uuid)
+            api.abort(403)
+        
+        # retrieve user    
+        diboarduser = User.query.filter(User.uuid == uuid).one()
+        if diboarduser is None:
+            print('Not found....Mysterious')
+            api.abort(404)
+        else:        
+            print('USER: ' + AuthUser.username)
+            return diboarduser, 200
