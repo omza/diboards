@@ -4,6 +4,9 @@ from database.models import Board, User
 from pyqrcode import *
 from flask import current_app as app
 
+# Logger
+import logging
+log = logging.getLogger(__name__)
 
 # Bulletinboard Logic sector
 # --------------------------------------
@@ -29,16 +32,16 @@ def create_board(data):
     # create qr code an save as png file
 
     qrpath = app.config['DIBOARDS_PATH_QR'] + board.uuid
-    print(qrpath)
+    log.info(qrpath)
     if not os.path.exists(qrpath):
         os.makedirs(qrpath)
         os.chmod(qrpath, 0o755)
 
     qrfile = qrpath + '/qr-' + board.uuid + '.png'
-    print(qrfile)
+    log.info(qrfile)
 
     qrlink = qrfile
-    print(qrlink)
+    log.info(qrlink)
 
     url = pyqrcode.create(qrlink)
     url.png(qrfile, scale=10, module_color=(255, 45, 139, 255), background=(255, 255, 255, 255), quiet_zone=4)

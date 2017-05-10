@@ -271,3 +271,6 @@ diboards.venv/
 # Flask config
 instance/
 volume/
+logging/
+/dbvolume/
+/diboards.sln

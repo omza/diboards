@@ -1,11 +1,15 @@
 from flask import request, g
+from flask import current_app as app
 from flask_restplus import Namespace, Resource, fields
 from .core import create_user, delete_user, update_user
 from database.models import  User
 from auth import auth as basicauth
 
-api = Namespace('users', description='user related operations')
+# Logger
+import logging
+log = logging.getLogger('diboardapi.' + __name__)
 
+api = Namespace('users', description='user related operations')
 
 # Serializers
 # ----------------------------------------------------------------------
@@ -59,24 +63,24 @@ class UserItem(Resource):
     @api.marshal_with(user)
     @basicauth.login_required
     def get(self, uuid):
-        print('get_user')
+        log.info('get_user')
         AuthUser = g.user        
         
         # Check authorized in user
         if AuthUser is None:
-            print('None - abort')
+            log.warning('None - abort')
             api.abort(401)
         
         # Check User Scope
         if AuthUser.uuid != uuid:
-            print(AuthUser.uuid + ' != ' + uuid)
+            log.warning(AuthUser.uuid + ' != ' + uuid)
             api.abort(403)
         
         # retrieve user    
         diboarduser = User.query.filter(User.uuid == uuid).one()
         if diboarduser is None:
-            print('Not found....Mysterious')
+            log.warning('Not found....Mysterious')
             api.abort(404)
         else:        
-            print('USER: ' + AuthUser.username)
+            log.info('USER: ' + AuthUser.username)
             return diboarduser, 200

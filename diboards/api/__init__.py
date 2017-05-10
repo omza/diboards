@@ -8,6 +8,10 @@ from database.models import User
 
 from flask import current_app as app
 
+# Logger
+import logging
+log = logging.getLogger(__name__)
+
 # register flask_restplus api
 # --------------------------------------------------------------
 authorizations = {
@@ -45,14 +49,13 @@ def postmancollection():
 @api.errorhandler
 def default_error_handler(e):
     message = 'An unhandled exception occurred.'
-    print(message)
-    #log.exception(message)
+    log.exception(message)
 
     if not app.config['DEBUG']:
         return {'message': message}, 500
 
 @api.errorhandler(NoResultFound)
 def database_not_found_error_handler(e):
-    #log.warning(traceback.format_exc())
+    log.warning(traceback.format_exc())
     return {'message': 'A database result was required but none was found.'}, 404
 

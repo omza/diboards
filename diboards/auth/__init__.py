@@ -2,6 +2,10 @@ from flask import g
 from flask_httpauth import HTTPBasicAuth
 from database.models import User
 
+# Logger
+import logging
+log = logging.getLogger(__name__)
+
 # HTTP Authentification
 # --------------------------------------------------------------
 auth = HTTPBasicAuth()
@@ -9,7 +13,7 @@ auth = HTTPBasicAuth()
 @auth.error_handler
 def auth_error():
     #api.abort(401)
-    print('authentification error callback')
+    log.exception('authentification error callback')
     return "&lt;h1&gt;Access Denied&lt;/h1&gt;"
 
 @auth.verify_password
@@ -19,6 +23,6 @@ def verify_password(username, password):
         g.user = None
         return False
     g.user = user
-    print(' VERIFIED USER: ' + user.username)
+    log.info(' VERIFIED USER: ' + user.username)
     return True
 
