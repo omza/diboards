@@ -6,7 +6,7 @@ from flask import current_app as app
 
 # Logger
 import logging
-log = logging.getLogger(__name__)
+log = logging.getLogger('diboardapi.' + __name__)
 
 # Bulletinboard Logic sector
 # --------------------------------------

@@ -4,7 +4,7 @@ from database.models import User
 
 # Logger
 import logging
-log = logging.getLogger(__name__)
+log = logging.getLogger('diboardapi.' + __name__)
 
 # HTTP Authentification
 # --------------------------------------------------------------
@@ -13,7 +13,7 @@ auth = HTTPBasicAuth()
 @auth.error_handler
 def auth_error():
     #api.abort(401)
-    log.exception('authentification error callback')
+    log.info('authentification error callback')
     return "&lt;h1&gt;Access Denied&lt;/h1&gt;"
 
 @auth.verify_password

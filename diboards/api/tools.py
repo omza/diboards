@@ -1,5 +1,8 @@
 from flask_restplus import Namespace, Resource, fields
-from .core import reset_database
+
+# Logger
+import logging
+log = logging.getLogger('diboardapi.' + __name__)
 
 api = Namespace('core', description='di.boards core tools api endpoints')
 
@@ -12,6 +15,7 @@ class ResetDatabase(Resource):
     def post(self):
         '''create database from scratch'''
         try:
+            from .core import reset_database
             reset_database()
             return None, 201
 

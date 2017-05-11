@@ -6,6 +6,7 @@ RUN mkdir -p /usr/qr
 RUN mkdir -p /usr/incomming
 RUN mkdir -p /usr/outgoing
 RUN mkdir -p /usr/db
+RUN mkdir -p /usr/log
 
 WORKDIR /usr/src/app
 
@@ -21,6 +22,7 @@ VOLUME /usr/qr/
 VOLUME /usr/incomming/
 VOLUME /usr/outgoing/
 VOLUME /usr/db/
+VOLUME /usr/log/
 
 ENV APP_CONFIG_FILE /usr/src/app/config/default.py
 

@@ -3,6 +3,10 @@ from datetime import datetime
 from passlib.apps import custom_app_context as pwd_context
 import uuid
 
+# Logger
+import logging
+log = logging.getLogger('diboardapi.' + __name__)
+
 # board db model
 # ----------------------------------------------------------------------------
 
@@ -52,6 +56,8 @@ class Board(db.Model):
         self.qrcode = qrcode
 
         self.create_date = datetime.utcnow()
+
+        log.info('A new Board #{} raises with uuid {}'.format(self.id, self.uuid))
 
     def __repr__(self):
         return '<Board %r>' % self.name

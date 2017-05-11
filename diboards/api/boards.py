@@ -3,6 +3,10 @@ from flask_restplus import Namespace, Resource, fields
 from .core import create_board, update_board, delete_board
 from database.models import Board
 
+# Logger
+import logging
+log = logging.getLogger('diboardapi.' + __name__)
+
 api = Namespace('boards', description='bulletin board related operations')
 
 board = api.model('Bulletin Board', {
@@ -41,9 +45,6 @@ class BoardCollection(Resource):
     @api.expect(board)
     @api.marshal_with(board)
     def post(self):
-        """
-        Creates a new blog category.
-        """
         data = request.json
         diboard = create_board(data)
         return diboard, 200
@@ -60,5 +61,3 @@ class BoardItem(Resource):
         
         diboard = Board.query.filter(Board.uuid == uuid).one()
         return diboard, 200
-        
-        api.abort(404)
