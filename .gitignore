@@ -261,6 +261,7 @@ __pycache__/
 *.pyc
 
 # Virtual environment
+venv.diboards/
 diboards.venv/
 .venv
 
