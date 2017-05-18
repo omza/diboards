@@ -1,4 +1,5 @@
-from flask_restplus import Namespace, Resource, fields
+from flask_restplus import Namespace, Resource
+import api.core
 
 # Logger
 import logging
@@ -15,8 +16,7 @@ class ResetDatabase(Resource):
     def post(self):
         '''create database from scratch'''
         try:
-            from .core import reset_database
-            reset_database()
+            api.core.reset_database()
             return None, 201
 
         except:
@@ -24,13 +24,17 @@ class ResetDatabase(Resource):
 
 
 @api. route('/postman')
-#@api.response(404, 'Could not transmit postman collection')
+@api.response(500, 'Could not transmit postman collection')
 @api.response(201, 'postman collection successfully created.')
 class PostmanCollection(Resource):
     @api.doc('create postman collection')
-    def get(self):
-        from api import postmancollection            
-        data = postmancollection()
-        return data, 201
+    def get(self):           
+        
+        try:
+            data = api.core.postmancollection()
+            return data, 201
+
+        except:
+            return 500
 
         

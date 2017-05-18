@@ -1,6 +1,8 @@
 from database import db
 from datetime import datetime
 from passlib.apps import custom_app_context as pwd_context
+from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from flask import current_app as app
 import uuid
 
 # Logger
@@ -79,6 +81,22 @@ class User(db.Model):
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
 
+    def generate_auth_token(self, expiration = 600):
+        s = Serializer(app.config['SECRET_KEY'], expires_in = expiration)
+        return s.dumps({ 'id': self.id })
+
+    @staticmethod
+    def verify_auth_token(token):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except SignatureExpired:
+            return None # valid token, but expired
+        except BadSignature:
+            return None # invalid token
+        user = User.query.get(data['id'])
+        return user
+
     def __init__(self, username, password, name='', active = False):
         self.uuid = str(uuid.uuid4())
         self.create_date = datetime.utcnow()
@@ -88,6 +106,9 @@ class User(db.Model):
 
         self.name = name
         self.active = active
+
+    def __repr__(self):
+        return '<User %r>' % self.username
 
 
 

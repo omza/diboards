@@ -1,13 +1,6 @@
 from flask_restplus import Api
 from sqlalchemy.orm.exc import NoResultFound
 
-from .boards import api as boards_ns
-from .users import api as users_ns
-from .tools import api as tools_ns
-from database.models import User
-
-from flask import current_app as app
-
 # Logger
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
@@ -32,18 +25,6 @@ api = Api(
     #catch_all_404s = True,
 )
 
-# register di.boards api namespace
-api.add_namespace(boards_ns)
-api.add_namespace(users_ns)
-api.add_namespace(tools_ns)
-
-def postmancollection():
-    from flask import json
-    
-    urlvars = False  # Build query strings in URLs
-    swagger = True  # Export Swagger specifications
-    data = api.as_postman(urlvars=urlvars, swagger=swagger)
-    return json.dumps(data)
 
 # global error handling
 @api.errorhandler

@@ -1,10 +1,16 @@
-import os
 import logging
 import logging.handlers
+
+import os
 from sys import stdout
+
 from flask import Flask
-from api import api
+
 from database import db
+from api import api
+from api.boards import api as boards_ns
+from api.users import api as users_ns
+from api.tools import api as tools_ns
 
 # Flask app instance
 app = Flask(__name__, instance_relative_config=True)
@@ -27,7 +33,7 @@ def LoadAppConfiguration(flaskapp):
 
 # Logging Configuraion
 # ---------------------------------------------------------------------------------
-def LoadLoggingConfiguration(flaskapp, logger):
+def LoadLoggingConfiguration(flaskapp, rootlog):
 
     # formatter
     formatter = logging.Formatter('%(asctime)s | %(name)s:%(lineno)d | %(funcName)s | %(levelname)s | %(message)s')
@@ -43,30 +49,42 @@ def LoadLoggingConfiguration(flaskapp, logger):
     filehandler.setFormatter(formatter)
     filehandler.setLevel(flaskapp.config['DIBOARDS_LOGLEVEL_FILE'])
 
-    #root logger
-    loggerdebuglevel = min(filter(None, (flaskapp.config['DIBOARDS_LOGLEVEL_CONSOLE'], flaskapp.config['DIBOARDS_LOGLEVEL_FILE']))) 
+    #overall log level
+    loggerdebuglevel = min(filter(None, (flaskapp.config['DIBOARDS_LOGLEVEL_CONSOLE'], flaskapp.config['DIBOARDS_LOGLEVEL_FILE'])))    
 
-    logger.setLevel(loggerdebuglevel)
-    logger.addHandler(consolehandler)
-    logger.addHandler(filehandler)
+    #diboards logger 
+    rootlog.setLevel(loggerdebuglevel)
+    rootlog.addHandler(consolehandler)
+    rootlog.addHandler(filehandler)
     
     #werkzeug logger
     werkzeuglog = logging.getLogger('werkzeug')
     werkzeuglog.setLevel(loggerdebuglevel)
-    logger.addHandler(consolehandler)
-    logger.addHandler(filehandler)
+    werkzeuglog.addHandler(consolehandler)
+    werkzeuglog.addHandler(filehandler)
+
+    #flask-restplus logger
+    flasklog = logging.getLogger('flask_restplus')
+    flasklog.setLevel(loggerdebuglevel)
+    flasklog.addHandler(consolehandler)
+    flasklog.addHandler(filehandler)
     pass
 
-def LogEnvironment(flaskapp, logger):
+def LogEnvironment(flaskapp, rootlog):
     if flaskapp.config['SERVER_NAME'] is not None:
-        logger.debug('SERVER_NAME=' + flaskapp.config['SERVER_NAME'])
+        rootlog.debug('SERVER_NAME=' + flaskapp.config['SERVER_NAME'])
     else:
-        logger.debug('SERVER_NAME=None') 
-    logger.debug('HOST=' + flaskapp.config['HOST'])
-    logger.debug('PORT=' + str(flaskapp.config['PORT']))
-    logger.debug('DEBUG=' + str(flaskapp.config['DEBUG']))
-    logger.debug('APP_CONFIG_FILE=' + os.environ.get('APP_CONFIG_FILE','No APP Config file'))
-    logger.debug('SQLALCHEMY_DATABASE_URI=' + flaskapp.config['SQLALCHEMY_DATABASE_URI'])
+        rootlog.debug('SERVER_NAME=None') 
+    
+    rootlog.debug('HOST=' + flaskapp.config['HOST'])
+    rootlog.debug('PORT=' + str(flaskapp.config['PORT']))
+    rootlog.debug('DEBUG=' + str(flaskapp.config['DEBUG']))
+    rootlog.debug('APP_CONFIG_FILE=' + os.environ.get('APP_CONFIG_FILE','No APP Config file'))
+    rootlog.debug('SQLALCHEMY_DATABASE_URI=' + flaskapp.config['SQLALCHEMY_DATABASE_URI'])
+    # Logging
+    rootlog.debug('DIBOARDS_PATH_LOG=' + flaskapp.config['DIBOARDS_PATH_LOG'])
+    rootlog.debug('DIBOARDS_LOGLEVEL_CONSOLE={!s}'.format(flaskapp.config['DIBOARDS_LOGLEVEL_CONSOLE']))
+    rootlog.debug('DIBOARDS_LOGLEVEL_FILE={!s}'.format(flaskapp.config['DIBOARDS_LOGLEVEL_FILE']))
 
 
 # startup App configuration/setting
@@ -78,6 +96,10 @@ if __name__ == '__main__':
     LoadLoggingConfiguration(app,log)
 
     # Initialize flask-restplus api
+    # register di.boards api namespace
+    api.add_namespace(boards_ns)
+    api.add_namespace(users_ns)
+    api.add_namespace(tools_ns)
     api.init_app(app)
 
     # Initialize SQL Alchemy

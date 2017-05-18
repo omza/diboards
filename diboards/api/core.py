@@ -1,7 +1,8 @@
 import os
-from database import db
-from database.models import Board, User
-from pyqrcode import *
+import database
+import database.models
+import pyqrcode
+
 from flask import current_app as app
 
 # Logger
@@ -13,7 +14,7 @@ log = logging.getLogger('diboardapi.' + __name__)
 def create_board(data):
 
     # Parse data and create Board instance
-    board = Board(
+    board = database.models.Board(
                   name=data.get('name'), 
                   state=data.get('state'), 
                   city=data.get('city'),
@@ -64,6 +65,15 @@ def delete_board(uuid):
     db.session.delete(category)
     db.session.commit()
     
+def read_board(uuid):
+    board = database.models.Board.query.filter(Board.uuid == uuid).one()
+    return board
+
+def list_boards(user):
+    log.info('retrieve board liste by user {}'.format(user.username))
+    boardlist = database.models.Board.query.all()
+    return boardlist
+
     
 # User Logic sector
 # ----------------------------------------
@@ -82,12 +92,12 @@ def update_user(uuid, data):
 def create_user(data):
     
     # user already exist ?
-    if User.query.filter_by(username = data.get('username')).first() is not None:
+    if database.models.User.query.filter_by(username = data.get('username')).first() is not None:
         user = None
         return user
     
     # create user instance
-    user = User(data.get('username'), data.get('password'), data.get('name'))
+    user = database.models.User(data.get('username'), data.get('password'), data.get('name'))
 
     # db update
     db.session.add(user)
@@ -95,7 +105,26 @@ def create_user(data):
 
     return user
 
+def read_user(uuid):
+    user = database.models.User.query.filter(User.uuid == uuid).one()
+    return user
+
+def list_user(user):
+    log.info('retrieve board liste by user {}'.format(user.username))
+    userlist = database.models.User.query.all()
+    return userlist
+
+
+
 # Create Database from scratch
 def reset_database():
     db.drop_all()
     db.create_all()
+
+def postmancollection():
+    from flask import json
+    
+    urlvars = False  # Build query strings in URLs
+    swagger = True  # Export Swagger specifications
+    data = api.as_postman(urlvars=urlvars, swagger=swagger)
+    return json.dumps(data)

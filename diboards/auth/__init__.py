@@ -1,6 +1,7 @@
-from flask import g
+from flask import g, abort
 from flask_httpauth import HTTPBasicAuth
 from database.models import User
+
 
 # Logger
 import logging
@@ -8,21 +9,23 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # HTTP Authentification
 # --------------------------------------------------------------
-auth = HTTPBasicAuth()
+basicauth = HTTPBasicAuth()
 
-@auth.error_handler
+@basicauth.error_handler
 def auth_error():
-    #api.abort(401)
-    log.info('authentification error callback')
-    return "&lt;h1&gt;Access Denied&lt;/h1&gt;"
+    log.info('Authentification error callback')
+    abort(401)
+    return
 
-@auth.verify_password
-def verify_password(username, password):
-    user = User.query.filter_by(username = username).first()
-    if not user or not user.verify_password(password):
-        g.user = None
-        return False
+@basicauth.verify_password
+def verify_password(username_or_token, password):
+    # first try to authenticate by token
+    user = User.verify_auth_token(username_or_token)
+    if not user:
+        # try to authenticate with username/password
+        user = User.query.filter_by(username = username_or_token).first()
+        if not user or not user.verify_password(password):
+            return False
     g.user = user
-    log.info(' VERIFIED USER: ' + user.username)
     return True
 
