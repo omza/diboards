@@ -8,14 +8,22 @@ user = api.model('di.board users', {
     'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
     'username': fields.String(required=True, description='email'),
     #'password': fields.String(required=True, description='user password', attribute='password_hash'),
-    'active': fields.Boolean(required=False, description='user is activated ?'),
     'name': fields.String(required=False, description='User name'),
+    'active': fields.Boolean(required=False, description='user is activated ?'),
     #'create_date': fields.DateTime(readOnly=True, required=False), 
+})
+
+newuser = api.model('di.board users sign up', {
+    'username': fields.String(required=True, description='email'),
+    'password': fields.String(required=True, description='user password'),
+    'name': fields.String(required=False, description='User name'),
 })
 
 token = api.model('di.board user token', {
     'token': fields.String(readOnly=True, required=True, description='Authentification by token'),
 })
+
+
 
 # Board 
 # ----------------------------------------------------------------------

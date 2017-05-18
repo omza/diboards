@@ -3,8 +3,8 @@ from flask_restplus import Namespace, Resource
 
 from auth import basicauth
 from api.core import create_user, delete_user, read_user, update_user, list_user
-from api.serializers import user, token
-from api.parsers import userparser
+from api.serializers import user, token, newuser
+#from api.parsers import userparser
 
 
 # Logger
@@ -29,14 +29,21 @@ class UserCollection(Resource):
 
 
     @api.response(200, 'User signed successfully up.')
-    @api.response(400, 'User already signed up')
-    @api.expect(userparser)
+    @api.response(400, 'not a valid email address')
+    @api.response(403, 'User already signed up')
+    @api.expect(newuser)
     @api.marshal_with(user)
     def post(self):
+        
         data = request.json
-        diboarduser = create_user(data)
-        if diboarduser is None:
-            api.abort(400, 'User already signed up')
+        httpstatus, diboarduser = create_user(data)
+        
+        if httpstatus == 400:
+            api.abort(400, 'not a valid email address')
+        elif httpstatus == 403:
+            api.abort(403, 'User already signed up')
+        elif diboarduser is None:
+            api.abort(500)
         else:
             return diboarduser, 200
 
@@ -72,6 +79,43 @@ class UserItem(Resource):
         else:        
             log.info('USER: ' + AuthUser.username)
             return diboarduser, 200
+
+@api.route('/<uuid>/activate/<email>')
+@api.param('uuid', 'The unique identifier of a di.board user')
+@api.param('email', 'emailaddress to activate')
+class UserActivate(Resource):
+    @api.doc('post_user_activate')
+    @api.response(200, 'User activated')
+    @api.response(403, 'Insufficient rights')
+    @api.response(404, 'User not found')
+    
+    def post(self, uuid, email):
+        
+        log.debug('post_user_activate')
+        
+        # retrieve user    
+        diboarduser = read_user(uuid)
+        
+        if diboarduser is None:
+            log.warning('User not found')
+            api.abort(404)
+
+        elif diboarduser.username != email:        
+            log.warning('User not found')
+            api.abort(403)
+
+        else:
+            try:    
+                data = {'active' : True}
+                update_user(uuid, data)
+                return 200
+            except:
+                api.abort(500)
+        pass
+
+
+
+
 
 @api.route('/token')
 class UserToken(Resource):

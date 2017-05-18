@@ -1,5 +1,5 @@
 from flask_restplus import Namespace, Resource
-import api.core
+from api.core import postmancollection, reset_database
 
 # Logger
 import logging
@@ -16,7 +16,7 @@ class ResetDatabase(Resource):
     def post(self):
         '''create database from scratch'''
         try:
-            api.core.reset_database()
+            reset_database()
             return None, 201
 
         except:
@@ -31,7 +31,7 @@ class PostmanCollection(Resource):
     def get(self):           
         
         try:
-            data = api.core.postmancollection()
+            data = postmancollection()
             return data, 201
 
         except:

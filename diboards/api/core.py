@@ -1,5 +1,5 @@
 import os
-import database
+from database import db
 import database.models
 import pyqrcode
 
@@ -66,7 +66,7 @@ def delete_board(uuid):
     db.session.commit()
     
 def read_board(uuid):
-    board = database.models.Board.query.filter(Board.uuid == uuid).one()
+    board = database.models.Board.query.filter(database.models.Board.uuid == uuid).one()
     return board
 
 def list_boards(user):
@@ -84,29 +84,49 @@ def delete_user(uuid):
     pass
 
 def update_user(uuid, data):
-    category = Category.query.filter(Category.id == category_id).one()
-    category.name = data.get('name')
-    db.session.add(category)
+    user = database.models.User.query.filter(database.models.User.uuid == uuid).one()
+    
+    if user is None:
+        return
+
+    for key, value in data.items():
+        if key == 'name':
+            user.name = value
+        elif key == 'active':
+            user.active = value
+        elif key == 'password':
+            user.hash_password(value)
+
+    db.session.add(user)
     db.session.commit()
+    return
+
+
 
 def create_user(data):
     
     # user already exist ?
     if database.models.User.query.filter_by(username = data.get('username')).first() is not None:
-        user = None
-        return user
+        return 403, None
     
     # create user instance
-    user = database.models.User(data.get('username'), data.get('password'), data.get('name'))
+    user = database.models.User(data.get('username'), data.get('password'), data.get('name'), False)
+    
+    # user
+    if not user.verify_emailadress():
+        return 400, None
+
+    # user verification (email flow)
+
 
     # db update
     db.session.add(user)
     db.session.commit()
 
-    return user
+    return 200, user
 
 def read_user(uuid):
-    user = database.models.User.query.filter(User.uuid == uuid).one()
+    user = database.models.User.query.filter(database.models.User.uuid == uuid).one()
     return user
 
 def list_user(user):
@@ -118,6 +138,7 @@ def list_user(user):
 
 # Create Database from scratch
 def reset_database():
+    log.warning('try to create db from scratch')
     db.drop_all()
     db.create_all()
 
