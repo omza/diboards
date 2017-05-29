@@ -1,10 +1,9 @@
-from flask import request, g
+from flask import request, g, send_from_directory
 from flask_restplus import Namespace, Resource
 
 import auth
-from api.core import create_board, list_boards, delete_board, read_board, update_board
-from api.serializers import board
-from api.parsers import qrparser
+from api.core import create_board, list_boards, delete_board, read_board, update_board, create_qrcode
+from api.serializers import board, qr
 
 
 # Logger
@@ -35,7 +34,7 @@ class BoardCollection(Resource):
     @api.marshal_with(board)
     def post(self):
         data = request.json
-        diboard = api.core.create_board(data)
+        diboard = create_board(data)
         return diboard, 200
 
 
@@ -48,7 +47,7 @@ class BoardItem(Resource):
     @api.response(404, 'Board not found')
     def get(self, uuid):
         '''Fetch a board given its identifier'''        
-        diboard = api.core.read_board(uuid)
+        diboard = read_board(uuid)
         if diboard is None:
             return 404
         else:    
@@ -60,18 +59,32 @@ class BoardItem(Resource):
 @api.param('uuid', 'The unique identifier of a bulletin board')
 class BoardQRCode(Resource):
 
+    @api.expect(qr)
     @api.doc('get_qrcode', security='basicauth')
-    @api.expect(qrparser)
+    @auth.basicauth.login_required
     @api.response(401, 'Authentication Required')
     @api.response(403, 'Insufficient rights')
     @api.response(404, 'board not found')
-    @auth.basicauth.login_required
-    def get(self, uuid):
+    def post(self, uuid):
 
-        log.info('get_qrcode')
-        AuthUser = g.user 
+        log.info('post_qrcode')
+        AuthUser = g.user
+        data = request.json
         
+        httpstatus, filename, filepath = create_qrcode(uuid, data, AuthUser)
         
-        return 200
+        if  httpstatus == 401:
+            return 401, 'Authentication Required'
+        elif httpstatus == 403:
+            return 403, 'Insufficient rights'
+        elif httpstatus == 404:
+            return 404, 'board not found'
+        elif (filename is not None) and (filepath is not None):
+            # sendfile
+            log.debug(filepath)
+            log.debug(filename)
+            return send_from_directory(filepath, filename, as_attachment=True)
+        else:
+            api.abort(500)
 
 

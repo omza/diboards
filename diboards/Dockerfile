@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /usr/src/app
 COPY /database/db.diboards /usr/db/db.diboards
-RUN rm db.diboards
+# RUN rm /database/db.diboards
 
 VOLUME /usr/src/app/
 VOLUME /usr/qr/

@@ -1,5 +1,5 @@
 from database import db
-from datetime import datetime
+from datetime import datetime, timedelta
 from passlib.apps import custom_app_context as pwd_context
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
@@ -68,7 +68,6 @@ class Board(db.Model):
     def __repr__(self):
         return '<Board %r>' % self.name
 
-
 # user db model
 # -------------------------------------------------------------------------
 
@@ -83,12 +82,14 @@ class User(db.Model):
     active = db.Column(db.Boolean)
     name = db.Column(db.String(32))
     create_date = db.Column(db.DateTime)
+    activationlink = db.Column(db.String(128))
+    activationlinkvalidity = db.Column(db.Integer)
     boards = db.relationship("Subscription", back_populates="user")
     
+    # methods
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)
         
-
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
 
@@ -119,7 +120,15 @@ class User(db.Model):
             return True
         pass
 
-    def __init__(self, username, password, name='', active = False):
+    def verify_activationvalidity(self):
+        validity = self.create_date + timedelta(hours=self.activationlinkvalidity) 
+        if datetime.utcnow() <= validity:
+            return True
+        else:
+            return False
+
+    # constructor and representation
+    def __init__(self, username, password, name='', active = False, activationlinkvalidity = 24):
         self.uuid = str(uuid.uuid4())
         self.create_date = datetime.utcnow()
         
@@ -128,6 +137,12 @@ class User(db.Model):
 
         self.name = name
         self.active = active
+
+        self.activationlinkvalidity = activationlinkvalidity
+        if app.config['SERVER_NAME'] is None:
+            self.activationlink = 'localhost:' + str(app.config['PORT']) + '/users/' + self.uuid + ':' + self.username + '/activate'
+        else:
+            self.activationlink = app.config['SERVER_NAME'] + '/users/' + uuid + ':' + username + '/activate'
 
     def __repr__(self):
         return '<User %r>' % self.username
