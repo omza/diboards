@@ -13,8 +13,8 @@ basicauth = HTTPBasicAuth()
 
 @basicauth.error_handler
 def auth_error():
-    log.info('Authentification error callback')
-    abort(401)
+    log.debug('Authentification error callback')
+    abort(401, 'Missing Authentification or wrong credentials')
     return
 
 @basicauth.verify_password

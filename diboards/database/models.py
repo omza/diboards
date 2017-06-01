@@ -1,7 +1,7 @@
 from database import db
 from datetime import datetime, timedelta
 from passlib.apps import custom_app_context as pwd_context
-from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired
 
 from flask import current_app as app
 import uuid
@@ -122,9 +122,10 @@ class User(db.Model):
 
     def verify_activationvalidity(self):
         validity = self.create_date + timedelta(hours=self.activationlinkvalidity) 
-        if datetime.utcnow() <= validity:
+        if (datetime.utcnow() <= validity) or (self.activationlinkvalidity == 0):
             return True
         else:
+            self.activationlinkvalidity = 0
             return False
 
     # constructor and representation
@@ -140,9 +141,9 @@ class User(db.Model):
 
         self.activationlinkvalidity = activationlinkvalidity
         if app.config['SERVER_NAME'] is None:
-            self.activationlink = 'localhost:' + str(app.config['PORT']) + '/users/' + self.uuid + ':' + self.username + '/activate'
+            self.activationlink = 'localhost:' + str(app.config['PORT']) + '/user/activate?id=' + str(self.id) + '&email=' + self.username
         else:
-            self.activationlink = app.config['SERVER_NAME'] + '/users/' + uuid + ':' + username + '/activate'
+            self.activationlink = app.config['SERVER_NAME'] + '/user/activate?id=' + str(self.id) + '&email=' + self.username
 
     def __repr__(self):
         return '<User %r>' % self.username

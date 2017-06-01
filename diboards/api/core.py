@@ -102,15 +102,25 @@ def create_qrcode(uuid, data, authuser):
     
 # User Logic sector
 # ----------------------------------------
-def delete_user(uuid):
+def delete_user(AuthUser):
+    
+    # Check authorized in user
+    if AuthUser is None:
+        return 401
+
     # retrieve user
-    user = database.models.User.query.filter(database.models.User.uuid == uuid).one()
+    user = database.models.User.query.filter(database.models.User.id == AuthUser.id).one()
  
     if user is None:
         return 404
     
-    db.session.delete(user)
-    db.session.commit()
+    # delete user
+    try:
+        db.session.delete(user)
+        db.session.commit()
+    except:
+        return 500
+
     return 200
 
 def update_user(uuid, data):
@@ -131,11 +141,11 @@ def update_user(uuid, data):
     db.session.commit()
     return 200
 
-def activate_user(uuid,email):
- 
+def activate_user(id,email):
+
     # retrieve user
-    user = database.models.User.query.filter(database.models.User.uuid == uuid).one()
- 
+    user = database.models.User.query.filter(database.models.User.id == id).one()
+
     if user is None:
         return 404
     
@@ -144,17 +154,18 @@ def activate_user(uuid,email):
         return 403
 
     #check validity (duration of link)
-    if not user.verify_activationvalidity():
+    if (user.active) or (not user.verify_activationvalidity()):
         return 408
 
     # db update
     user.active = True
+    user.activationlink = ''
+    user.activationlinkvalidity = 0
+
     db.session.add(user)
     db.session.commit()
-    return 200, user
+    return 200
     
-
-
 def create_user(data):
     
     # user already exist ?
@@ -174,9 +185,21 @@ def create_user(data):
 
     return 200, user
 
-def read_user(uuid):
-    user = database.models.User.query.filter(database.models.User.uuid == uuid).one()
-    return user
+def select_user(AuthUser):
+    
+    # Check authorized in user
+    if AuthUser is None:
+        return 401, None
+        
+    # Check User Scope
+    log.debug('USER: ' + AuthUser.username)
+    user = database.models.User.query.filter(database.models.User.uuid == AuthUser.uuid).one()
+    
+    if user is None:
+        return 404, None
+    else:
+        return 200, user
+        
 
 def list_user(user):
     log.info('retrieve board liste by user {}'.format(user.username))

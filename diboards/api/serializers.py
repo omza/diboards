@@ -35,7 +35,7 @@ userdetail = api.model('di.board user details', {
 
 token = api.model('di.board user token', {
     'token': fields.String(readOnly=True, required=True, description='Authentification by token'),
-    'validuntil': fields.DateTime(readOnly=True, required=False, description='token is valid until'), 
+    'expiration': fields.Integer(readOnly=True, required=False, description='token expires in ... seconds'), 
 })
 
 
