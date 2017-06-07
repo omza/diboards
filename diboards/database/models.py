@@ -56,7 +56,7 @@ class Board(db.Model):
         self.gpslong = gpslong
         self.gpslat = gpslat
         self.gpsele = gpsele
-        #self.gpstime = gpstime
+        self.gpstime = gpstime
 
         self.active = active
         self.qrcode = qrcode
@@ -65,8 +65,6 @@ class Board(db.Model):
 
         log.info('A new Board #{} raises with uuid {}'.format(self.id, self.uuid))
 
-    def __repr__(self):
-        return '<Board %r>' % self.name
 
 # user db model
 # -------------------------------------------------------------------------
@@ -163,10 +161,13 @@ class Subscription(db.Model):
     board = db.relationship('Board',back_populates="users")
 
 
-    def __init__(self, userid, boardid, roleid, flowid):
-        self.username = username
-        self.email = email
+    def __init__(self, userid, boardid, roleid, flowid, flowstatus, active = False):
+        self.userid = userid
+        self.boardid = boardid
+        self.roleid = roleid
+        self.flowid = flowid
+        self.flowstatus = flowstatus
+        self.active = active
+        self.create_date = datetime.utcnow()
 
-    def __repr__(self):
-        return '<User %r>' % self.username
 

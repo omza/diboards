@@ -43,8 +43,8 @@ token = api.model('di.board user token', {
 # Board 
 # ----------------------------------------------------------------------
 board = api.model('Bulletin Board public detail', {
-    #'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
-    'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
+    'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
+    #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
     'name': fields.String(required=True, description='Board name'),
     'state': fields.String(required=True, description='Board location state'),
     'city': fields.String(required=True, description='Board location City'),
@@ -53,20 +53,20 @@ board = api.model('Bulletin Board public detail', {
     'housenumber': fields.String(required=True, description='Board location House Number'),
     'building': fields.String(required=True, description='Board location Building description'),
     
-    #'gpslong': fields.Float(required=False, description='Board location gps longitude'),
-    #'gpslat': fields.Float(required=False, description='Board location gps latitude'),
-    #'gpsele': fields.Float(required=False, description='Board location gps elevation'),
-    #'gpstime': fields.DateTime(readOnly=True, required=False),
+    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
+    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
+    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
+    #'gpstime': fields.DateTime(required=False),
 
-    'active': fields.Boolean(readOnly=True, required=True, description='Board is activated ?'),
+    'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
     #'qrcode': fields.String(required=False, description='Link to QR Code'),
 
-    #'create_date': fields.DateTime(readOnly=True, required=False), 
+    'create_date': fields.DateTime(readOnly=True, required=False), 
 })
 
 boarddetail = api.model('Bulletin Board details', {
     'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
-    'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
+    #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
     'name': fields.String(required=True, description='Board name'),
     'state': fields.String(required=True, description='Board location state'),
     'city': fields.String(required=True, description='Board location City'),
@@ -80,7 +80,7 @@ boarddetail = api.model('Bulletin Board details', {
     'gpsele': fields.Float(required=False, description='Board location gps elevation'),
     'gpstime': fields.DateTime(readOnly=True, required=False),
 
-    'active': fields.Boolean(readOnly=True, required=True, description='Board is activated ?'),
+    'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
     #'qrcode': fields.String(required=False, description='Link to QR Code'),
 
     'create_date': fields.DateTime(readOnly=True, required=False), 

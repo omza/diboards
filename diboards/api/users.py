@@ -2,8 +2,8 @@ from flask import request, g
 from flask_restplus import Namespace, Resource
 
 from auth import basicauth
-from api.core import create_user, delete_user, select_user, update_user, list_user, activate_user
-from api.serializers import user, token, newuser, userdetail
+from api.core import create_user, delete_user, select_user, update_user, list_user, activate_user, list_boards
+from api.serializers import user, token, newuser, userdetail, board
 #from api.parsers import userparser
 
 
@@ -194,3 +194,30 @@ class UserToken(Resource):
         # prepare return
         diboardstoken = {'token' : token, 'expiration': expiration}
         return diboardstoken, 200
+
+@api.route('/subscriptions')
+class UserSubscription(Resource):
+    
+    # swagger responses   
+    _responses = {200: ('Success', userdetail),
+                  401: 'Missing Authentification or wrong credentials',
+                  403: 'Insufficient rights',
+                  404: 'No Boards found'
+                  }
+    
+    @api.doc(description='retrieve a list of boards the user is subscribed', security='basicauth', responses=_responses)
+    @basicauth.login_required
+    @api.marshal_with(board)
+    def get(self):
+
+        # retrieve boardlist
+        httpstatus, diboards = list_boards(g.user)
+
+        # return httpstatus, object
+        if httpstatus in UserActivate._responses:
+            if httpstatus == 200:
+                return diboards, 200
+            else:
+                api.abort(httpstatus, UserActivate._responses[httpstatus])
+        else:
+            api.abort(500)

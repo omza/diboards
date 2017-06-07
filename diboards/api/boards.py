@@ -18,28 +18,43 @@ api = Namespace('boards', description='bulletin board related operations')
 
 @api.route('/')
 class BoardCollection(Resource):
-    
-    @api.doc('list_boards', security='basicauth')
-    @auth.basicauth.login_required
+
+    # swagger responses   
+    _responses = {200: ('Success', board),
+                  401: 'Missing Authentification or wrong credentials',
+                  403: 'Insufficient rights or Bad request',
+                  404: 'No Boards found'
+                  }
+
+    # list/filter boards (public)
+    @api.doc(description='list boards with filters', responses=_responses)
+    @api.param(name = 'id', description = 'filter for a single board with unique board id', type = int)
     @api.marshal_list_with(board)
     def get(self):
-        '''List all boards'''
-        log.info('get boards')
-        AuthUser = g.user
-        BoardList = list_boards(AuthUser)
-        return BoardList
 
-    @api.response(200, 'Bulletin Board successfully created.')
+        #retrieve boardlist
+        httpstatus, diboards = list_boards(request.args.copy())
+
+        # return httpstatus, object
+        if httpstatus in BoardCollection._responses:
+            if httpstatus == 200:
+                return diboards, 200
+            else:
+                api.abort(httpstatus, BoardCollection._responses[httpstatus])
+        else:
+            api.abort(500)
+
+    #new board
     @api.expect(board)
     @api.marshal_with(board)
     def post(self):
         data = request.json
-        diboard = create_board(data)
+        diboards = create_board(data)
         return diboard, 200
 
 
-@api.route('/<uuid>')
-@api.param('uuid', 'The unique identifier of a bulletin board')
+@api.route('/<int:id>')
+@api.param('id', 'The unique identifier of a bulletin board')
 class BoardItem(Resource):
     
     @api.doc('get_board')

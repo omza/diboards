@@ -55,15 +55,33 @@ def read_board(uuid):
     board = database.models.Board.query.filter(database.models.Board.uuid == uuid).one()
     return board
 
-def list_boards(user):
-    log.info('retrieve board liste by user {}'.format(user.username))
-    boardlist = database.models.Board.query.all()
-    return boardlist
+def list_boards(params = None):
+
+    # concat filters
+    boardsfilter = ''
+    for key, value in params.items():
+        if key == 'id':
+            try:
+                id = int(value)
+                if id > 0:
+                    boardsfilter = boardsfilter + '(board.id == ' + str(id) + ') and '
+                elif id < 0:
+                    return 403, None
+            except:
+                return 403, None
+    boardsfilter = boardsfilter[:-5]       
+    log.info('retrieve board liste with filters {!s}'.format(boardsfilter)) 
+
+    # retrieve boardlist
+    boardlist = database.models.Board.query.filter(boardsfilter).all()
+    if boardlist is None:
+        return 404, None
+
+    return 200, boardlist
 
 
 # QRCODES Logic sector
 # ----------------------------------------
-
 def create_qrcode(uuid, data, authuser):
     
     #retrieve board
@@ -107,19 +125,10 @@ def delete_user(AuthUser):
     # Check authorized in user
     if AuthUser is None:
         return 401
-
-    # retrieve user
-    user = database.models.User.query.filter(database.models.User.id == AuthUser.id).one()
- 
-    if user is None:
-        return 404
     
     # delete user
-    try:
-        db.session.delete(user)
-        db.session.commit()
-    except:
-        return 500
+    db.session.delete(AuthUser)
+    db.session.commit()
 
     return 200
 
