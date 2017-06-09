@@ -1,9 +1,12 @@
+# imports & globals
+# ---------------------------------------------------------------------------------------------------------------
+
 from flask import request, g
 from flask_restplus import Namespace, Resource
 
 from auth import basicauth
 from api.core import create_user, delete_user, select_user, update_user, list_user, activate_user, list_boards
-from api.serializers import user, token, newuser, userdetail, board
+from api.serializers import _user, _token, _newuser, _userdetail, _board
 #from api.parsers import userparser
 
 
@@ -11,7 +14,13 @@ from api.serializers import user, token, newuser, userdetail, board
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
+# register Namespaces & models
 api = Namespace('user', description='user related operations')
+user = api.model(_user['name'], _user['model'])
+newuser = api.model(_newuser['name'], _newuser['model'])
+userdetail = api.model(_userdetail['name'], _userdetail['model'])
+token = api.model(_token['name'], _token['model'])
+board = api.model(_board['name'], _board['model'])
 
 # routes
 # ---------------------------------------------------------------------
@@ -42,6 +51,10 @@ class UserOps(Resource):
     @api.marshal_with(userdetail)
     def get(self):
                 
+        # check authentification
+        #if g.authresult != 200:
+        #api.abort(401, UserOps._responses[401])
+        
         # select user
         log.info('get_user')
         httpstatus, diboarduser =  select_user(g.user)

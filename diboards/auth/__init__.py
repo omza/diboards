@@ -9,6 +9,15 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # HTTP Authentification
 # --------------------------------------------------------------
+authorizations = {
+    'basicauth': {
+        'type': 'basic',
+        'in': 'header',
+        'name': 'X-API-KEY'
+    }
+}
+
+
 basicauth = HTTPBasicAuth()
 
 @basicauth.error_handler

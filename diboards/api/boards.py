@@ -3,7 +3,7 @@ from flask_restplus import Namespace, Resource
 
 import auth
 from api.core import create_board, list_boards, delete_board, read_board, update_board, create_qrcode
-from api.serializers import board, qr
+from api.serializers import _board, _qr
 
 
 # Logger
@@ -11,6 +11,10 @@ import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
 api = Namespace('boards', description='bulletin board related operations')
+
+board = api.model(_board['name'], _board['model'])
+qr = api.model(_qr['name'], _qr['model'])
+
 
 
 # Endpoints

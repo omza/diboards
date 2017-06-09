@@ -1,16 +1,14 @@
-import logging
-import logging.handlers
-
+# imports & globals
+# -------------------------------------------------------------------------------
 import os
 from sys import stdout
 
 from flask import Flask
-
 from database import db
-from api import api
-from api.boards import api as boards_ns
-from api.users import api as users_ns
-from api.tools import api as tools_ns
+from api import diboardsapi
+
+import logging
+import logging.handlers
 
 # Flask app instance
 app = Flask(__name__, instance_relative_config=True)
@@ -29,6 +27,11 @@ def LoadAppConfiguration(flaskapp):
     # Load the file specified by the APP_CONFIG_FILE environment variable
     # Variables defined here will override those in the default configuration
     flaskapp.config.from_envvar('APP_CONFIG_FILE')
+    
+    if flaskapp.config['SERVER_NAME'] is not None:
+        flaskapp.config['HOST'] = None
+        flaskapp.config['PORT'] = None
+
     pass
 
 # Logging Configuraion
@@ -73,11 +76,11 @@ def LoadLoggingConfiguration(flaskapp, rootlog):
 def LogEnvironment(flaskapp, rootlog):
     if flaskapp.config['SERVER_NAME'] is not None:
         rootlog.debug('SERVER_NAME=' + flaskapp.config['SERVER_NAME'])
-    else:
-        rootlog.debug('SERVER_NAME=None') 
     
-    rootlog.debug('HOST=' + flaskapp.config['HOST'])
-    rootlog.debug('PORT=' + str(flaskapp.config['PORT']))
+    else: 
+        rootlog.debug('HOST=' + flaskapp.config['HOST'])
+        rootlog.debug('PORT=' + str(flaskapp.config['PORT']))
+
     rootlog.debug('DEBUG=' + str(flaskapp.config['DEBUG']))
     rootlog.debug('APP_CONFIG_FILE=' + os.environ.get('APP_CONFIG_FILE','No APP Config file'))
     rootlog.debug('SQLALCHEMY_DATABASE_URI=' + flaskapp.config['SQLALCHEMY_DATABASE_URI'])
@@ -95,12 +98,8 @@ if __name__ == '__main__':
     LoadAppConfiguration(app)
     LoadLoggingConfiguration(app,log)
 
-    # Initialize flask-restplus api
-    # register di.boards api namespace
-    api.add_namespace(boards_ns)
-    api.add_namespace(users_ns)
-    api.add_namespace(tools_ns)
-    api.init_app(app)
+    # register blueprints api and manage
+    app.register_blueprint(diboardsapi)
 
     # Initialize SQL Alchemy
     db.init_app(app)
@@ -112,4 +111,7 @@ if __name__ == '__main__':
     wsgi_app = app.wsgi_app
     
     # run di.boards api app
-    app.run(host=app.config['HOST'], port = app.config['PORT'])
+    if app.config['SERVER_NAME'] is not None:
+        app.run()
+    else:
+        app.run(host=app.config['HOST'], port = app.config['PORT'])

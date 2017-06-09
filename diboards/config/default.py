@@ -1,5 +1,5 @@
 # Flask settings
-SERVER_NAME = 'api.diboards.com'
+SERVER_NAME = 'diboards.com'
 DEBUG = False  # Do not use debug mode in production
 PORT = 5000
 HOST = '0.0.0.0'
