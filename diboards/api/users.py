@@ -7,8 +7,6 @@ from flask_restplus import Namespace, Resource
 from auth import basicauth
 from api.core import create_user, delete_user, select_user, update_user, list_user, activate_user, list_boards
 from api.serializers import _user, _token, _newuser, _userdetail, _board
-#from api.parsers import userparser
-
 
 # Logger
 import logging
@@ -33,12 +31,10 @@ class UserOps(Resource):
                   403: 'Insufficient rights',
                   404: 'User not found'
                   }
-
     _responsesNew = {200: ('User signed successfully up.', userdetail),
                         400: 'not a valid email address',
                         403: 'User already signed up'
                         }
-
     _responsesDelete = {200: 'Deleted',
                     401: 'Missing Authentification or wrong credentials',
                     403: 'Insufficient rights',
@@ -51,10 +47,6 @@ class UserOps(Resource):
     @api.marshal_with(userdetail)
     def get(self):
                 
-        # check authentification
-        #if g.authresult != 200:
-        #api.abort(401, UserOps._responses[401])
-        
         # select user
         log.info('get_user')
         httpstatus, diboarduser =  select_user(g.user)

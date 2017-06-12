@@ -1,3 +1,6 @@
+# imports & globals
+# -----------------------------------------------------
+
 import os
 
 from database import db
@@ -5,7 +8,6 @@ from datetime import datetime, timedelta
 
 import database.models
 import pyqrcode
-
 
 from flask import current_app as app
 
@@ -81,7 +83,7 @@ def list_boards(params = None):
 
 
 # QRCODES Logic sector
-# ----------------------------------------
+
 def create_qrcode(uuid, data, authuser):
     
     #retrieve board
@@ -126,14 +128,17 @@ def delete_user(AuthUser):
     if AuthUser is None:
         return 401
     
+    AuthUser.active = False
+
     # delete user
-    db.session.delete(AuthUser)
+    db.session.add(AuthUser)
     db.session.commit()
 
     return 200
 
-def update_user(uuid, data):
-    user = database.models.User.query.filter(database.models.User.uuid == uuid).one()
+
+def update_user(id, data):
+    user = database.models.User.query.filter(database.models.User.id == id).one()
     
     if user is None:
         return 404
