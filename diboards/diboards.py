@@ -108,7 +108,7 @@ if __name__ == '__main__':
     LogEnvironment(app, log)
 
     # Make the WSGI interface available at the top level so wfastcgi can get it.
-    wsgi_app = app.wsgi_app
+    #wsgi_app = app.wsgi_app
     
     # run di.boards api app
     if app.config['SERVER_NAME'] is not None:

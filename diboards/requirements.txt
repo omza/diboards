@@ -2,7 +2,7 @@ Flask==0.12.2
 flask-restplus==0.10.1
 Flask-SQLAlchemy==2.2
 SQLAlchemy==1.1.10
-Flask-HTTPAuth==3.2.2
+Flask-HTTPAuth==3.2.3
 passlib==1.7.1
 pypng==0.0.18
 PyQRCode==1.2.1
@@ -18,7 +18,7 @@ pip==9.0.1
 pyparsing==2.2.0
 python-dateutil==2.6.0
 pytz==2017.2
-setuptools==35.0.2
+setuptools==36.0.1
 six==1.10.0
 Werkzeug==0.12.2
-
+gunicorn==19.7.1

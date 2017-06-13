@@ -10,25 +10,23 @@ ENV APP_CONFIG_FILE /usr/src/app/config/default.py
 # dirs & volumes
 # --------------------------------------------------------
 
-RUN mkdir -p /usr/src/app
-RUN mkdir -p /usr/static
-RUN mkdir -p /usr/db
-RUN mkdir -p /usr/log
+RUN mkdir -p /usr/src/app \
+	&& mkdir -p /usr/db \
+	&& mkdir -p /usr/log
 
 WORKDIR /usr/src/app
 
-VOLUME /usr/src/app/
-VOLUME /usr/static/
-VOLUME /usr/db/
-VOLUME /usr/log/
-
-
 COPY requirements.txt /usr/src/app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt 
 
 COPY . /usr/src/app
 COPY ./database/db.diboards /usr/db/db.diboards
 RUN rm ./database/db.diboards
+
+VOLUME /usr/src/app/
+#VOLUME /usr/src/app/manage/static/
+VOLUME /usr/db/
+VOLUME /usr/log/
 
 
 # nginx
@@ -163,20 +161,20 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
-COPY ./nginx/nginx.conf /etc/nginx/
-COPY ./nginx/diboards.conf /etc/nginx/conf.d/
-COPY ./nginx/*.html /usr/static/
+COPY nginx.conf /etc/nginx/
+COPY nginx.diboards.conf /etc/nginx/conf.d/
 
+EXPOSE 80 443
 
-# Ports & Start
+# Start & Stop
 # -----------------------------------------------------------
-
-EXPOSE 80
 
 STOPSIGNAL SIGTERM
 
-CMD ["nginx", "-g", "daemon off;"]
+#CMD ./diboardsstart.sh
+#CMD ["python", "app.py", ";", "nginx", "-g", "daemon off;"]
+CMD ["gunicorn", "-w 1", "diboards:app"]
 
 
 #EXPOSE 5000
-#CMD [ "python", "app.py" ] 
+#CMD [  ] 
