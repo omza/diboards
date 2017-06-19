@@ -12,103 +12,72 @@ import logging.handlers
 
 # Flask app instance
 app = Flask(__name__, instance_relative_config=True)
-log = logging.getLogger('diboardapi')
+
 
 # App Configuration
 # ------------------------------------------------------------------------------
-def LoadAppConfiguration(flaskapp):
     
-    # Load the default configuration
-    flaskapp.config.from_object('config.default')
+# Load the default configuration
+app.config.from_object('config.default')
  
-    # Load the configuration from the instance folder
-    flaskapp.config.from_pyfile('secrets.py')
+# Load the configuration from the instance folder
+app.config.from_pyfile('secrets.py')
  
-    # Load the file specified by the APP_CONFIG_FILE environment variable
-    # Variables defined here will override those in the default configuration
-    flaskapp.config.from_envvar('APP_CONFIG_FILE')
-    
-    if flaskapp.config['SERVER_NAME'] is not None:
-        flaskapp.config['HOST'] = None
-        flaskapp.config['PORT'] = None
+# Load the file specified by the APP_CONFIG_FILE environment variable
+# Variables defined here will override those in the default configuration
+app.config.from_envvar('APP_CONFIG_FILE')
 
-    pass
 
 # Logging Configuraion
 # ---------------------------------------------------------------------------------
-def LoadLoggingConfiguration(flaskapp, rootlog):
+# formatter
+formatter = logging.Formatter('%(asctime)s | %(name)s:%(lineno)d | %(funcName)s | %(levelname)s | %(message)s')
 
-    # formatter
-    formatter = logging.Formatter('%(asctime)s | %(name)s:%(lineno)d | %(funcName)s | %(levelname)s | %(message)s')
-
-    #console handler    
-    consolehandler = logging.StreamHandler(stdout)
-    consolehandler.setFormatter(formatter)
-    consolehandler.setLevel(flaskapp.config['DIBOARDS_LOGLEVEL_CONSOLE'])
+#console handler    
+consolehandler = logging.StreamHandler(stdout)
+consolehandler.setFormatter(formatter)
+consolehandler.setLevel(app.config['DIBOARDS_LOGLEVEL_CONSOLE'])
     
-    #file handler
-    LOG_FILENAME = flaskapp.config['DIBOARDS_PATH_LOG'] + 'diboardsapi.log'
-    filehandler = logging.handlers.RotatingFileHandler(LOG_FILENAME, flaskapp.config['DIBOARDS_LOGMAXBYTE_FILE'], flaskapp.config['DIBOARDS_LOGBACKUPCOUNT_FILE'])
-    filehandler.setFormatter(formatter)
-    filehandler.setLevel(flaskapp.config['DIBOARDS_LOGLEVEL_FILE'])
+#file handler
+LOG_FILENAME = app.config['DIBOARDS_PATH_LOG'] + 'diboardsapi.log'
+filehandler = logging.handlers.RotatingFileHandler(LOG_FILENAME, app.config['DIBOARDS_LOGMAXBYTE_FILE'], app.config['DIBOARDS_LOGBACKUPCOUNT_FILE'])
+filehandler.setFormatter(formatter)
+filehandler.setLevel(app.config['DIBOARDS_LOGLEVEL_FILE'])
 
-    #overall log level
-    loggerdebuglevel = min(filter(None, (flaskapp.config['DIBOARDS_LOGLEVEL_CONSOLE'], flaskapp.config['DIBOARDS_LOGLEVEL_FILE'])))    
+#overall log level
+loggerdebuglevel = min(filter(None, (app.config['DIBOARDS_LOGLEVEL_CONSOLE'], app.config['DIBOARDS_LOGLEVEL_FILE'])))    
 
-    #diboards logger 
-    rootlog.setLevel(loggerdebuglevel)
-    rootlog.addHandler(consolehandler)
-    rootlog.addHandler(filehandler)
-    
-    #werkzeug logger
-    werkzeuglog = logging.getLogger('werkzeug')
-    werkzeuglog.setLevel(loggerdebuglevel)
-    werkzeuglog.addHandler(consolehandler)
-    werkzeuglog.addHandler(filehandler)
+#diboards logger
+log = logging.getLogger('diboardapi') 
+log.setLevel(loggerdebuglevel)
+log.addHandler(consolehandler)
+log.addHandler(filehandler)
 
-    #flask-restplus logger
-    flasklog = logging.getLogger('flask_restplus')
-    flasklog.setLevel(loggerdebuglevel)
-    flasklog.addHandler(consolehandler)
-    flasklog.addHandler(filehandler)
-    pass
-
-def LogEnvironment(flaskapp, rootlog):
-    if flaskapp.config['SERVER_NAME'] is not None:
-        rootlog.debug('SERVER_NAME=' + flaskapp.config['SERVER_NAME'])
-    
-    else: 
-        rootlog.debug('HOST=' + flaskapp.config['HOST'])
-        rootlog.debug('PORT=' + str(flaskapp.config['PORT']))
-
-    rootlog.debug('DEBUG=' + str(flaskapp.config['DEBUG']))
-    rootlog.debug('APP_CONFIG_FILE=' + os.environ.get('APP_CONFIG_FILE','No APP Config file'))
-    rootlog.debug('SQLALCHEMY_DATABASE_URI=' + flaskapp.config['SQLALCHEMY_DATABASE_URI'])
-    # Logging
-    rootlog.debug('DIBOARDS_PATH_LOG=' + flaskapp.config['DIBOARDS_PATH_LOG'])
-    rootlog.debug('DIBOARDS_LOGLEVEL_CONSOLE={!s}'.format(flaskapp.config['DIBOARDS_LOGLEVEL_CONSOLE']))
-    rootlog.debug('DIBOARDS_LOGLEVEL_FILE={!s}'.format(flaskapp.config['DIBOARDS_LOGLEVEL_FILE']))
+#flask-restplus logger
+flasklog = logging.getLogger('flask_restplus')
+flasklog.setLevel(loggerdebuglevel)
+flasklog.addHandler(consolehandler)
+flasklog.addHandler(filehandler)
 
 
-# startup App configuration/setting
+# register blueprints api and manage
 # --------------------------------------------------------
+app.register_blueprint(diboardsapi)
+
+# Initialize SQL Alchemy
+# --------------------------------------------------------
+db.init_app(app)
+
+# log App configuration/setting
+# --------------------------------------------------------
+for key, value in app.config.items():
+    log.debug('{} = {!s}'.format(key, value))
+
+
+
+# main
+# -----------------------------------------------------------
 if __name__ == '__main__':
-
-    # Load Config
-    LoadAppConfiguration(app)
-    LoadLoggingConfiguration(app,log)
-
-    # register blueprints api and manage
-    app.register_blueprint(diboardsapi)
-
-    # Initialize SQL Alchemy
-    db.init_app(app)
-    
-    # log environment
-    LogEnvironment(app, log)
-
-    # Make the WSGI interface available at the top level so wfastcgi can get it.
-    #wsgi_app = app.wsgi_app
     
     # run di.boards api app
     if app.config['SERVER_NAME'] is not None:

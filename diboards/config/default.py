@@ -1,8 +1,8 @@
 # Flask settings
 SERVER_NAME = 'diboards.com'
 DEBUG = False  # Do not use debug mode in production
-PORT = 5000
-HOST = '0.0.0.0'
+#PORT = 5000
+#HOST = '0.0.0.0'
 
 # Flask-Restplus settings
 RESTPLUS_SWAGGER_UI_DOC_EXPANSION = 'list'

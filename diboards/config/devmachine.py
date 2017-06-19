@@ -2,7 +2,7 @@
 SERVER_NAME = None
 DEBUG = True  # Do not use debug mode in production
 PORT = 5000
-HOST = 'localhost'
+HOST = '0.0.0.0'
 
 # Flask-Restplus settings
 RESTPLUS_SWAGGER_UI_DOC_EXPANSION = 'list'

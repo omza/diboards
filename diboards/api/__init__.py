@@ -26,7 +26,7 @@ api = Api(diboardsapi,
     title='di.boards api',
     version='0.1',
     description='bring your real world bulletin board in digitial life',
-    doc='/swagger/',
+    #doc='/swagger/',
     # All API metadatas
     authorizations=authorizations,
     #serve_challenge_on_401 = True,

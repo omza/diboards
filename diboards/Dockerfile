@@ -6,28 +6,30 @@ MAINTAINER oliver@app-workshop.de
 ENV NGINX_VERSION 1.13.1
 ENV APP_CONFIG_FILE /usr/src/app/config/default.py
 
-
 # dirs & volumes
 # --------------------------------------------------------
-
 RUN mkdir -p /usr/src/app \
 	&& mkdir -p /usr/db \
 	&& mkdir -p /usr/log
 
 WORKDIR /usr/src/app
 
-COPY requirements.txt /usr/src/app/
-RUN pip install --no-cache-dir -r requirements.txt 
-
 COPY . /usr/src/app
-COPY ./database/db.diboards /usr/db/db.diboards
-RUN rm ./database/db.diboards
+RUN mv /usr/src/app/database/db.diboards /usr/db/db.diboards
+
 
 VOLUME /usr/src/app/
 #VOLUME /usr/src/app/manage/static/
 VOLUME /usr/db/
 VOLUME /usr/log/
 
+# Supervisor py3k (dev version)
+# ---------------------------------------------------------
+RUN apk update && \
+    apk upgrade && \
+    apk add -u git && \
+	pip install --no-cache-dir setuptools-git && \
+	pip install --no-cache-dir git+https://github.com/orgsea/supervisor-py3k.git
 
 # nginx
 # ---------------------------------------------------------
@@ -161,20 +163,21 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
-COPY nginx.conf /etc/nginx/
-COPY nginx.diboards.conf /etc/nginx/conf.d/
+COPY ./config/nginx.conf /etc/nginx/
+COPY ./config/nginx.dev.conf /etc/nginx/conf.d/
+COPY ./config/nginx.corssupport /etc/nginx/conf.d/
 
-EXPOSE 80 443
+VOLUME /etc/nginx/conf.d/
+
+# Install requirements
+# ----------------------------------------------------------
+COPY requirements.txt /usr/src/app/
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Start & Stop
 # -----------------------------------------------------------
+EXPOSE 80 443
 
 STOPSIGNAL SIGTERM
 
-#CMD ./diboardsstart.sh
-#CMD ["python", "app.py", ";", "nginx", "-g", "daemon off;"]
-CMD ["gunicorn", "-w 1", "diboards:app"]
-
-
-#EXPOSE 5000
-#CMD [  ] 
+ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/usr/src/app/config/supervisord.conf"]
