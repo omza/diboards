@@ -1,16 +1,22 @@
 FROM python:3.6.1-alpine
 MAINTAINER oliver@app-workshop.de
 
-# ENVs
+# ARGs & ENVs
 # -------------------------------------------------------
+ARG DIBOARDS_VERSION
+ENV DIBOARDS_VERSION ${DIBOARDS_VERSION:-v0.1}
 ENV NGINX_VERSION 1.13.1
+ENV NGINX_CONFIG /usr/src/app/deploy/nginx.prod.conf
+ENV DIBOARDS_VERSION ${DIBOARDS_VERSION:-v0.1}
 ENV APP_CONFIG_FILE /usr/src/app/config/default.py
 
 # dirs & volumes
 # --------------------------------------------------------
 RUN mkdir -p /usr/src/app \
 	&& mkdir -p /usr/db \
-	&& mkdir -p /usr/log
+	&& mkdir -p /usr/log \
+	&& mkdir -p /tmp
+
 
 WORKDIR /usr/src/app
 
@@ -19,7 +25,7 @@ RUN mv /usr/src/app/database/db.diboards /usr/db/db.diboards
 
 
 VOLUME /usr/src/app/
-#VOLUME /usr/src/app/manage/static/
+VOLUME /usr/src/app/manage/static/
 VOLUME /usr/db/
 VOLUME /usr/log/
 
@@ -163,11 +169,10 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
-COPY ./config/nginx.conf /etc/nginx/
-COPY ./config/nginx.dev.conf /etc/nginx/conf.d/
-COPY ./config/nginx.corssupport /etc/nginx/conf.d/
-
-VOLUME /etc/nginx/conf.d/
+COPY ./deploy/nginx.dev.conf /etc/nginx/nginx.conf
+#COPY ./config/nginx.dev.conf /etc/nginx/conf.d/
+    
+#VOLUME /etc/nginx/conf.d/
 
 # Install requirements
 # ----------------------------------------------------------
@@ -180,4 +185,4 @@ EXPOSE 80 443
 
 STOPSIGNAL SIGTERM
 
-ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/usr/src/app/config/supervisord.conf"]
+ENTRYPOINT ["supervisord", "--nodaemon", "--configuration", "/usr/src/app/deploy/supervisord.conf"]

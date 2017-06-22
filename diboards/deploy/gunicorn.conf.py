@@ -124,8 +124,8 @@ spew = False
 daemon = False
 pidfile = None
 umask = 0
-user = root
-#group = None
+user = None
+group = None
 tmp_upload_dir = None
 
 #

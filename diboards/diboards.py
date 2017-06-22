@@ -27,6 +27,9 @@ app.config.from_pyfile('secrets.py')
 # Variables defined here will override those in the default configuration
 app.config.from_envvar('APP_CONFIG_FILE')
 
+#Add diboardsversion from buildinfo
+app.config['DIBOARDS_VERSION']=os.environ.get('DIBOARDS_VERSION')
+
 
 # Logging Configuraion
 # ---------------------------------------------------------------------------------
@@ -62,17 +65,17 @@ flasklog.addHandler(filehandler)
 
 # register blueprints api and manage
 # --------------------------------------------------------
-app.register_blueprint(diboardsapi)
+app.register_blueprint(diboardsapi, url_prefix=('/{s!}'.format(app.config['DIBOARDS_VERSION'])), subdomain ='api')
 
 # Initialize SQL Alchemy
 # --------------------------------------------------------
 db.init_app(app)
 
-# log App configuration/setting
+# log App configuration/setting  if in debug mode
 # --------------------------------------------------------
-for key, value in app.config.items():
-    log.debug('{} = {!s}'.format(key, value))
-
+if app.debug:
+    for key, value in app.config.items():
+        log.debug('{} = {!s}'.format(key, value))
 
 
 # main
