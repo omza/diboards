@@ -65,7 +65,7 @@ flasklog.addHandler(filehandler)
 
 # register blueprints api and manage
 # --------------------------------------------------------
-app.register_blueprint(diboardsapi, url_prefix=('/{s!}'.format(app.config['DIBOARDS_VERSION'])), subdomain ='api')
+app.register_blueprint(diboardsapi)
 
 # Initialize SQL Alchemy
 # --------------------------------------------------------

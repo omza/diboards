@@ -1,5 +1,5 @@
 # Flask settings
-SERVER_NAME = None
+SERVER_NAME = 'devdiboards.com:5000'
 DEBUG = True  # Do not use debug mode in production
 PORT = 5000
 HOST = '0.0.0.0'

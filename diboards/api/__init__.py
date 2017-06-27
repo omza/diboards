@@ -18,14 +18,14 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # register flask_restplus api and namespaces as blueprint
 # --------------------------------------------------------------
-diboardsapi = Blueprint('api', __name__)
+diboardsapi = Blueprint('api', __name__, subdomain ='api')
 
 
 api = Api(diboardsapi,
     title='di.boards api',
     version='v0.1',
     description='bring your real world bulletin board in digitial life',
-    doc='/doc/',
+    #doc='/doc/',
     # All API metadatas
     authorizations=authorizations,
     #serve_challenge_on_401 = True,

@@ -5,9 +5,11 @@ MAINTAINER oliver@app-workshop.de
 # -------------------------------------------------------
 ARG DIBOARDS_VERSION
 ENV DIBOARDS_VERSION ${DIBOARDS_VERSION:-v0.1}
+ARG DIBOARDS_BUILD
+ENV DIBOARDS_BUILD ${DIBOARDS_BUILD:-0000.00.00.00.00}
+
 ENV NGINX_VERSION 1.13.1
 ENV NGINX_CONFIG /usr/src/app/deploy/nginx.prod.conf
-ENV DIBOARDS_VERSION ${DIBOARDS_VERSION:-v0.1}
 ENV APP_CONFIG_FILE /usr/src/app/config/default.py
 
 # dirs & volumes
