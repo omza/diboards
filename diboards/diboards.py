@@ -11,7 +11,7 @@ import logging
 import logging.handlers
 
 # Flask app instance
-app = Flask(__name__, instance_relative_config=True)
+app = Flask(__name__)
 
 
 # App Configuration
@@ -20,12 +20,12 @@ app = Flask(__name__, instance_relative_config=True)
 # Load the default configuration
 app.config.from_object('config.default')
  
-# Load the configuration from the instance folder
-app.config.from_pyfile('secrets.py')
- 
 # Load the file specified by the APP_CONFIG_FILE environment variable
 # Variables defined here will override those in the default configuration
-app.config.from_envvar('APP_CONFIG_FILE')
+app.config.from_envvar('DIBOARDS_CONFIG_FILE')
+
+# Load the secrets configuration from the instance folder
+app.config.from_envvar('DIBOARDS_SECRET_FILE')
 
 #Add diboardsversion from buildinfo
 app.config['DIBOARDS_VERSION']=os.environ.get('DIBOARDS_VERSION')
