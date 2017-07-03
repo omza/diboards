@@ -3,15 +3,13 @@ MAINTAINER oliver@app-workshop.de
 
 # ARGs & ENVs
 # -------------------------------------------------------
-ENV DIBOARDS_VERSION v0.1
-ENV DIBOARDS_BUILD 0000.00.00.00.00
-
 ENV NGINX_CONFIG /usr/src/app/deploy/nginx.prod.conf
 ENV NGINX_SSL_KEY /certs/default.key
 ENV NGINX_SSL_CRT /certs/default.crt
-ENV DIBOARDS_CONFIG_FILE /usr/src/app/config/default.py
-ENV DIBOARDS_SECRET_FILE /usr/src/app/config/secret.py
 
+ENV DIBOARDS_VERSION v0.1
+ENV DIBOARDS_CONFIG_FILE /usr/src/app/config/default.py
+ENV DIBOARDS_SECRET_FILE /usr/src/app/config/secrets.py
 
 # dirs & volumes
 # --------------------------------------------------------
