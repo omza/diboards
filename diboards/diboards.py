@@ -26,7 +26,7 @@ app.config.from_envvar('DIBOARDS_CONFIG_FILE')
 
 # Load the secrets configuration from the instance folder
 if os.path.isfile('/secrets/secrets.py'):
-    app.config.from_pyfile('application.cfg', silent=True)
+    app.config.from_pyfile('/secrets/secrets.py', silent=True)
 else:
     app.config.from_object('config.secrets')
 
