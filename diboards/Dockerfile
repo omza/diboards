@@ -25,9 +25,6 @@ WORKDIR /usr/src/app
 COPY . /usr/src/app
 RUN mv /usr/src/app/database/db.diboards /usr/db/db.diboards
 
-# RUN mv /usr/src/app/config/secrets.py /secrets/secrets.py
-# RUN touch /certs/default.key && touch /certs/default.crt
-
 VOLUME /usr/src/app/
 VOLUME /usr/db/
 VOLUME /usr/log/

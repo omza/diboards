@@ -25,7 +25,10 @@ app.config.from_object('config.default')
 app.config.from_envvar('DIBOARDS_CONFIG_FILE')
 
 # Load the secrets configuration from the instance folder
-app.config.from_envvar('DIBOARDS_SECRET_FILE')
+if os.path.isfile('/secrets/secrets.py'):
+    app.config.from_pyfile('application.cfg', silent=True)
+else:
+    app.config.from_object('config.secrets')
 
 #Add diboardsversion from buildinfo
 app.config['DIBOARDS_VERSION']=os.environ.get('DIBOARDS_VERSION')
