@@ -1,5 +1,7 @@
 # imports & globals
 # -------------------------------------------------------------
+import os
+import sqlalchemy.orm.exc
 
 from flask import Blueprint
 from flask_restplus import Api
@@ -18,12 +20,19 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # register flask_restplus api and namespaces as blueprint
 # --------------------------------------------------------------
-diboardsapi = Blueprint('api', __name__, subdomain ='api')
+apiversion = os.environ.get('DIBOARDS_VERSION')
+
+if (apiversion is None):
+    apiversion = 'v0.1'
+
+urlprefix = '/api/' + os.environ.get('DIBOARDS_VERSION')
+
+diboardsapi = Blueprint('api', __name__, url_prefix=urlprefix) # subdomain ='api')
 
 
 api = Api(diboardsapi,
     title='di.boards api',
-    version='v0.1',
+    version=apiversion,
     description='bring your real world bulletin board in digitial life',
     #doc='/doc/',
     # All API metadatas
