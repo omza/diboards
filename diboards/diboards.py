@@ -4,6 +4,8 @@ import os
 from sys import stdout
 
 from flask import Flask
+from flask_cors import CORS, cross_origin
+
 from database import db
 from api import diboardsapi
 
@@ -12,7 +14,7 @@ import logging.handlers
 
 # Flask app instance
 app = Flask(__name__)
-
+CORS(app)
 
 # App Configuration
 # ------------------------------------------------------------------------------
