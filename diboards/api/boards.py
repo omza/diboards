@@ -3,7 +3,7 @@ from flask_restplus import Namespace, Resource
 
 import auth
 from api.core import create_board, list_boards, delete_board, read_board, update_board, create_qrcode
-from api.serializers import _board, _qr
+from api.serializers import _board, _qr, _newboard, _boarddetail
 
 
 # Logger
@@ -13,6 +13,9 @@ log = logging.getLogger('diboardapi.' + __name__)
 api = Namespace('boards', description='bulletin board related operations')
 
 board = api.model(_board['name'], _board['model'])
+boarddetail = api.model(_boarddetail['name'], _boarddetail['model'])
+boardnew = api.model(_newboard['name'], _newboard['model'])
+
 qr = api.model(_qr['name'], _qr['model'])
 
 
@@ -24,14 +27,19 @@ qr = api.model(_qr['name'], _qr['model'])
 class BoardCollection(Resource):
 
     # swagger responses   
-    _responses = {200: ('Success', board),
+    _responses = {}
+    _responses['get'] = {200: ('Success', board),
                   401: 'Missing Authentification or wrong credentials',
                   403: 'Insufficient rights or Bad request',
                   404: 'No Boards found'
                   }
+    _responses['post'] = {200: ('Success', boarddetail),
+                  401: 'Missing Authentification or wrong credentials',
+                  403: 'Insufficient rights or Bad request'
+                  }
 
     # list/filter boards (public)
-    @api.doc(description='list boards with filters', responses=_responses)
+    @api.doc(description='list boards with filters', responses=_responses['get'])
     @api.param(name = 'id', description = 'filter for a single board with unique board id', type = int)
     @api.marshal_list_with(board)
     def get(self):
@@ -40,21 +48,34 @@ class BoardCollection(Resource):
         httpstatus, diboards = list_boards(request.args.copy())
 
         # return httpstatus, object
-        if httpstatus in BoardCollection._responses:
+        if httpstatus in BoardCollection._responses['get']:
             if httpstatus == 200:
                 return diboards, 200
             else:
-                api.abort(httpstatus, BoardCollection._responses[httpstatus])
+                api.abort(httpstatus, BoardCollection._responses['get'][httpstatus])
         else:
             api.abort(500)
 
     #new board
-    @api.expect(board)
-    @api.marshal_with(board)
+    @api.doc(description='create e new diboard', security='basicauth', responses=_responses['post'])
+    @auth.basicauth.login_required
+    @api.expect(boardnew)
+    @api.marshal_with(boarddetail)
     def post(self):
+        
+        AuthUser = g.user
         data = request.json
-        diboards = create_board(data)
-        return diboard, 200
+        
+        httpstatus ,diboards = create_board(data, AuthUser)
+
+        # return httpstatus, object
+        if httpstatus in BoardCollection._responses['post']:
+            if httpstatus == 200:
+                return diboards, 200
+            else:
+                api.abort(httpstatus, BoardCollection._responses['post'][httpstatus])
+        else:
+            api.abort(500)
 
 
 @api.route('/<int:id>')
@@ -62,11 +83,11 @@ class BoardCollection(Resource):
 class BoardItem(Resource):
     
     @api.doc('get_board')
-    @api.marshal_with(board)
+    @api.marshal_with(boarddetail)
     @api.response(404, 'Board not found')
-    def get(self, uuid):
+    def get(self, id):
         '''Fetch a board given its identifier'''        
-        diboard = read_board(uuid)
+        diboard = read_board(id)
         if diboard is None:
             return 404
         else:    

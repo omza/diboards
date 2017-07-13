@@ -14,6 +14,9 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # register Namespaces & models
 api = Namespace('user', description='user related operations')
+
+
+""" Register Models """
 user = api.model(_user['name'], _user['model'])
 newuser = api.model(_newuser['name'], _newuser['model'])
 userdetail = api.model(_userdetail['name'], _userdetail['model'])

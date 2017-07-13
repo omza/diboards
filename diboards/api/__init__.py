@@ -3,7 +3,7 @@
 import os
 import sqlalchemy.orm.exc
 
-from flask import Blueprint
+from flask import Blueprint, json
 from flask_restplus import Api
 
 from api.boards import api as boards_ns
@@ -46,8 +46,6 @@ api = Api(diboardsapi,
 api.add_namespace(boards_ns)
 api.add_namespace(users_ns)
 api.add_namespace(tools_ns)
-
-
 
 # global error handling
 # --------------------------------------------------------------

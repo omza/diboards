@@ -1,10 +1,12 @@
-# imports & globals
-# -------------------------------------------------------------------------------
+""" 
+    imports & globals
+    -------------------------------------------------------------------------------
+"""
+
 import os
 from sys import stdout
 
 from flask import Flask
-#from flask_cors import CORS
 
 from database import db
 from api import diboardsapi
@@ -14,11 +16,12 @@ import logging.handlers
 
 # Flask app instance
 app = Flask(__name__)
-#cors = CORS(app, resources={r"*": {"origins": "*"}})
 
-# App Configuration
-# ------------------------------------------------------------------------------
-    
+"""
+    App Configuration
+    ------------------------------------------------------------------------------
+"""    
+
 # Load the default configuration
 app.config.from_object('config.default')
  
@@ -35,10 +38,11 @@ else:
 #Add diboardsversion from buildinfo
 app.config['DIBOARDS_VERSION']=os.environ.get('DIBOARDS_VERSION')
 
-
-# Logging Configuraion
-# ---------------------------------------------------------------------------------
-# formatter
+"""
+    Logging Configuraion
+    ---------------------------------------------------------------------------------
+    formatter
+"""
 formatter = logging.Formatter('%(asctime)s | %(name)s:%(lineno)d | %(funcName)s | %(levelname)s | %(message)s')
 
 #console handler    

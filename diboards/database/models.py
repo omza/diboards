@@ -11,15 +11,17 @@ import re
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
-# board db model
-# ----------------------------------------------------------------------------
-
+""" 
+   Board db model
+   -------------------------------------------------------------------------
+"""
 class Board(db.Model):
     __tablename__ = 'board'
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(32), index=True)
     
     name = db.Column(db.String(50))
+    description = db.Column(db.String(100))
 
     state = db.Column(db.String(50))
     city = db.Column(db.String(50))
@@ -38,37 +40,46 @@ class Board(db.Model):
     
     create_date = db.Column(db.DateTime)
     
+    """ bord settings allowed messengers """
+    allowemail = db.Column(db.Boolean)
+    allowsms = db.Column(db.Boolean)
+
+    """ bord settings allowed workflows """
+    acceptsubsrequests  = db.Column(db.Boolean)
+
+    """ board owner """
+    ownercompany = db.Column(db.String(100))    
+    ownerlastname = db.Column(db.String(50))
+    ownerfirstname = db.Column(db.String(50))
+    ownerstate = db.Column(db.String(50))
+    ownercity = db.Column(db.String(50))
+    ownerzip = db.Column(db.String(5))
+    ownerstreet = db.Column(db.String(50))
+    ownerhousenumber = db.Column(db.String(10))
+    
     users = db.relationship("Subscription", back_populates="board")
     
-    def __init__(self, name, state, city, zip, street, housenumber, building, gpslong=None, gpslat=None, gpsele=None, gpstime=None, active=False, qrcode=None):
+    def __init__(self, data):
         
+        """ auto keys """
+        self.active = True
         self.uuid = str(uuid.uuid4())
-
-        self.name = name
-         
-        self.state = state
-        self.city = city
-        self.zip = zip
-        self.street = street
-        self.housenumber = housenumber
-        self.building = building
-
-        self.gpslong = gpslong
-        self.gpslat = gpslat
-        self.gpsele = gpsele
-        self.gpstime = gpstime
-
-        self.active = active
-        self.qrcode = qrcode
-
         self.create_date = datetime.utcnow()
+        
+        log.info('A new Board raises with uuid {}'.format(self.uuid))
 
-        log.info('A new Board #{} raises with uuid {}'.format(self.id, self.uuid))
-
-
-# user db model
-# -------------------------------------------------------------------------
-
+        """ parse and log data dictionary into instance var """
+        for key, value in data.items():
+            if (not key in vars(self)) and (key in vars(Board)):
+                setattr(self, key, value)
+            
+        for key, value in vars(self).items():   
+            log.info('Board {} - member: {} = {!s}'.format(self.uuid,key,value))
+               
+""" 
+   user db model
+   -------------------------------------------------------------------------
+"""
 class User(db.Model):
     __tablename__ = 'users'
     _emailverificationre = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
@@ -80,8 +91,8 @@ class User(db.Model):
     active = db.Column(db.Boolean)
     name = db.Column(db.String(32))
     create_date = db.Column(db.DateTime)
-    activationlink = db.Column(db.String(128))
-    activationlinkvalidity = db.Column(db.Integer)
+    #activationlink = db.Column(db.String(128))
+    #activationlinkvalidity = db.Column(db.Integer)
     boards = db.relationship("Subscription", back_populates="user")
     
     # methods
@@ -118,6 +129,7 @@ class User(db.Model):
             return True
         pass
 
+    """
     def verify_activationvalidity(self):
         validity = self.create_date + timedelta(hours=self.activationlinkvalidity) 
         if (datetime.utcnow() <= validity) or (self.activationlinkvalidity == 0):
@@ -125,6 +137,7 @@ class User(db.Model):
         else:
             self.activationlinkvalidity = 0
             return False
+    """
 
     # constructor and representation
     def __init__(self, username, password, name='', active = False, activationlinkvalidity = 24):
@@ -137,17 +150,20 @@ class User(db.Model):
         self.name = name
         self.active = active
 
+        """
         self.activationlinkvalidity = activationlinkvalidity
         if app.config['SERVER_NAME'] is None:
             self.activationlink = 'localhost:' + str(app.config['PORT']) + '/user/activate?id=' + str(self.id) + '&email=' + self.username
         else:
             self.activationlink = app.config['SERVER_NAME'] + '/user/activate?id=' + str(self.id) + '&email=' + self.username
-
+        """
     def __repr__(self):
         return '<User %r>' % self.username
 
-# subscription db model
-# -------------------------------------------------------------------------
+"""
+    subscription db model
+    -------------------------------------------------------------------------
+"""
 class Subscription(db.Model):
     __tablename__ = 'subscription'
     userid = db.Column(db.Integer, db.ForeignKey('board.id') ,primary_key = True)

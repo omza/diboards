@@ -17,30 +17,24 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # Bulletinboard Logic sector
 # --------------------------------------
-def create_board(data):
+def create_board(data, AuthUser):
+
+    if AuthUser is None:
+        return 401, None
 
     # Parse data and create Board instance
-    board = database.models.Board(
-                  name=data.get('name'), 
-                  state=data.get('state'), 
-                  city=data.get('city'),
-                  zip=data.get('zip'), 
-                  street=data.get('street'), 
-                  housenumber=data.get('housenumber'), 
-                  building=data.get('building'),
-                  gpslong = data.get('gpslong'),
-                  gpslat = data.get('gpslat'),
-                  gpsele = data.get('gpsele'),
-                  gpstime = data.get('gpstime'),
-                  active=data.get('active'),
-                  qrcode = data.get('qrcode')
-                  )
+    board = database.models.Board(data)
 
-    # db update
+    # db update Board 
     db.session.add(board)
     db.session.commit()
 
-    return board
+    """ Subscription """
+    subscription = database.models.Subscription(userid = AuthUser.id, boardid = board.id, roleid = 'OWNER', flowid = 'NEW', flowstatus = 'CREATED', active = True)
+    db.session.add(subscription)
+    db.session.commit()
+
+    return 200, board
 
 def update_board(uuid, data):
     category = Category.query.filter(Category.id == category_id).one()
@@ -166,15 +160,18 @@ def activate_user(id,email):
     #parametercheck successfull/ activationlink correct ?
     if user.username != email:
         return 403
-
-    #check validity (duration of link)
-    if (user.active) or (not user.verify_activationvalidity()):
+    
+    # check validity (duration of link)
+    if (user.active): #or (not user.verify_activationvalidity()):
         return 408
+    
 
     # db update
     user.active = True
+    """
     user.activationlink = ''
-    user.activationlinkvalidity = 0
+    user.activationlinkvalidity = 0 
+    """
 
     db.session.add(user)
     db.session.commit()
@@ -230,6 +227,7 @@ def reset_database():
 
 def postmancollection():
     from flask import json
+    from api import api
     
     urlvars = False  # Build query strings in URLs
     swagger = True  # Export Swagger specifications

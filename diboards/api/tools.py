@@ -27,14 +27,10 @@ class ResetDatabase(Resource):
 @api.response(500, 'Could not transmit postman collection')
 @api.response(201, 'postman collection successfully created.')
 class PostmanCollection(Resource):
+    
     @api.doc('create postman collection')
     def get(self):           
-        
-        try:
-            data = postmancollection()
-            return data, 201
-
-        except:
-            return 500
+        data = postmancollection()
+        return data, 201
 
         
