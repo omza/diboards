@@ -66,6 +66,10 @@ _board['model'] = {
                     'housenumber': fields.String(required=True, description='Board location House Number'),
                     'building': fields.String(required=True, description='Board location Building description'),
     
+                    'ownercompany': fields.String(required=True, description='Board owner Company'),
+                    'ownercity': fields.String(required=True, description='Board owner City'),
+                    'ownerstate': fields.String(required=True, description='Board owner state'),
+
                     'gpslong': fields.Float(required=False, description='Board location gps longitude'),
                     'gpslat': fields.Float(required=False, description='Board location gps latitude'),
                     'gpsele': fields.Float(required=False, description='Board location gps elevation'),
@@ -104,6 +108,16 @@ _newboard['model'] = {
                     'allowemail': fields.Boolean(required=True, description='Messenger eMail is allowed ?'),
                     'allowsms': fields.Boolean(required=True, description='Messenger SMS/MMS is allowed ?'),
                     'acceptsubsrequests': fields.Boolean(required=True, description='Should the Board allow subscriptions request from user'),
+
+                    'ownercompany': fields.String(required=True, description='Board owner Company'),
+                    'ownerfirstname': fields.String(required=True, description='Board owner first name'),
+                    'ownerlastname': fields.String(required=True, description='Board owner last name'),
+                    'ownercity': fields.String(required=True, description='Board owner City'),
+                    'ownerzip': fields.String(required=True, description='Board owner zip code'),
+                    'ownerstreet': fields.String(required=True, description='Board owner street'),
+                    'ownerhousenumber': fields.String(required=True, description='Board owner House Number'),
+                    'ownerstate': fields.String(required=True, description='Board owner state'),
+
                 }
 
 
@@ -130,9 +144,19 @@ _boarddetail['model'] = {
                             #'qrcode': fields.String(required=False, description='Link to QR Code'),
 
                             'create_date': fields.DateTime(readOnly=True, required=False),
+
                             'allowemail': fields.Boolean(required=False, description='Messenger eMail is allowed ?'),
                             'allowsms': fields.Boolean(required=False, description='Messenger SMS/MMS is allowed ?'),
-                            'acceptsubsrequests': fields.Boolean(required=False, description='Should the Board allow subscriptions request from user'),                            
+                            'acceptsubsrequests': fields.Boolean(required=False, description='Should the Board allow subscriptions request from user'),
+                            
+                            'ownercompany': fields.String(required=True, description='Board owner Company'),
+                            'ownerfirstname': fields.String(required=True, description='Board owner first name'),
+                            'ownerlastname': fields.String(required=True, description='Board owner last name'),
+                            'ownercity': fields.String(required=True, description='Board owner City'),
+                            'ownerzip': fields.String(required=True, description='Board owner zip code'),
+                            'ownerstreet': fields.String(required=True, description='Board owner street'),
+                            'ownerhousenumber': fields.String(required=True, description='Board owner House Number'),
+                            'ownerstate': fields.String(required=True, description='Board owner state'),                            
                         }
 
 _qr = {}

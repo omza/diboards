@@ -57,7 +57,7 @@ class BoardCollection(Resource):
             api.abort(500)
 
     #new board
-    @api.doc(description='create e new diboard', security='basicauth', responses=_responses['post'])
+    @api.doc(description='create a new diboard', security='basicauth', responses=_responses['post'])
     @auth.basicauth.login_required
     @api.expect(boardnew)
     @api.marshal_with(boarddetail)
@@ -81,21 +81,58 @@ class BoardCollection(Resource):
 @api.route('/<int:id>')
 @api.param('id', 'The unique identifier of a bulletin board')
 class BoardItem(Resource):
+
+    # swagger responses   
+    _responses = {}
+    _responses['get'] = {200: ('Success', boarddetail),
+                  401: 'Missing Authentification or wrong credentials',
+                  403: 'Insufficient rights or Bad request',
+                  404: 'No Boards found'
+                  }
+    _responses['put'] = _responses['get']
+
     
-    @api.doc('get_board')
+    """ retrieve board """
+    @api.doc(description='show all diboard details to owner and administrator', security='basicauth', responses=_responses['get'])
+    @auth.basicauth.login_required
     @api.marshal_with(boarddetail)
-    @api.response(404, 'Board not found')
     def get(self, id):
-        '''Fetch a board given its identifier'''        
-        diboard = read_board(id)
-        if diboard is None:
-            return 404
-        else:    
-            return diboard, 200
-        pass
+        AuthUser = g.user
+        httpstatus, diboard = read_board(id, AuthUser )
+
+        # return httpstatus, object
+        if httpstatus in BoardCollection._responses['get']:
+            if httpstatus == 200:
+                return diboard, 200
+            else:
+                api.abort(httpstatus, BoardCollection._responses['get'][httpstatus])
+        else:
+            api.abort(500)
+    
+            
+    """ update board """
+    @api.doc(description='update all diboard details by owner or administrator', security='basicauth', responses=_responses['put'])
+    @auth.basicauth.login_required
+    @api.expect(boardnew)
+    @api.marshal_with(boarddetail)
+    def put(self, id):
+        
+        AuthUser = g.user
+        data = request.json
+
+        httpstatus, diboard = update_board(id, data, AuthUser)
+
+        # return httpstatus, object
+        if httpstatus in BoardCollection._responses['put']:
+            if httpstatus == 200:
+                return diboard, 200
+            else:
+                api.abort(httpstatus, BoardCollection._responses['put'][httpstatus])
+        else:
+            api.abort(500)
 
 
-@api.route('/<uuid>/qr')
+@api.route('/<int:id>/qr')
 @api.param('uuid', 'The unique identifier of a bulletin board')
 class BoardQRCode(Resource):
 

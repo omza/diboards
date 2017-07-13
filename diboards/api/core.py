@@ -36,25 +36,63 @@ def create_board(data, AuthUser):
 
     return 200, board
 
-def update_board(uuid, data):
-    category = Category.query.filter(Category.id == category_id).one()
-    category.name = data.get('name')
-    db.session.add(category)
-    db.session.commit()
+def update_board(id, data, AuthUser):
+    """ show board details to an active owner and administrator """
+
+    """ User Active """
+    if AuthUser.active == False:
+        return 403, None
+
+    """ retrieve board """
+    diboard = database.models.Board.query.get(id)
+    if diboard is None:
+        return 404, None
+
+    """ check ownership """
+    subscription = database.models.Subscription.query.get((AuthUser.id, id))
+    if subscription is None:
+        return 403, None
+    elif subscription.roleid not in ['OWNER', 'ADMIN']:
+        return 403, None
+
+    """ update all fields """
+    for key, value in data.items():
+        if (key in vars(diboard)):
+            setattr(diboard, key, value)
+
+    return 200, diboard
 
 def delete_board(uuid):
     category = Category.query.filter(Category.id == category_id).one()
     db.session.delete(category)
     db.session.commit()
     
-def read_board(uuid):
-    board = database.models.Board.query.filter(database.models.Board.uuid == uuid).one()
-    return board
+def read_board(id, AuthUser):
+    """ show board details to an active owner and administrator """
+
+    """ User Active """
+    if AuthUser.active == False:
+        return 403, None
+
+    """ retrieve board """
+    diboard = database.models.Board.query.get(id)
+    if diboard is None:
+        return 404, None
+
+    """ check owner """
+    subscription = database.models.Subscription.query.get((AuthUser.id, id))
+    if subscription is None:
+        return 403, None
+    elif subscription.roleid not in ['OWNER', 'ADMIN']:
+        return 403, None
+    else:
+        return 200, diboard
+
 
 def list_boards(params = None):
 
     # concat filters
-    boardsfilter = ''
+    boardsfilter = '(board.active) and '
     for key, value in params.items():
         if key == 'id':
             try:
