@@ -1,24 +1,15 @@
 from flask_restplus import fields
 
-# User
-# ----------------------------------------------------------------------
-#_ = {}
-#_['name'] = ''
-#_['fields'] = {}
-
-
-_newuser = {}
-_newuser['name'] = 'di.board users sign up'
-_newuser['model'] =  {'username': fields.String(required=True, description='email'),
-                        'password': fields.String(required=True, description='user password'),
-                        'name': fields.String(required=False, description='User name'),
-                        #'activationlinkvalidity': fields.Integer(required=False, description='validity of activation link in minutes until creation datetime'),
-                        }
+"""
+    _ = {}
+    _['name'] = ''
+    _['fields'] = {}
+"""
 
 _user = {}
 _user['name'] = 'di.board users public data'
 _user['model'] = {
-                    'id': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
+                    #'id': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
                     #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
                     'username': fields.String(required=True, description='email'),
                     #'password': fields.String(required=True, description='user password'),
@@ -26,20 +17,6 @@ _user['model'] = {
                     #'active': fields.Boolean(required=False, description='user is activated ?'),
                     #'create_date': fields.DateTime(readOnly=True, required=False), 
                     }
-
-_userdetail = {}
-_userdetail['name'] = 'di.board user details'
-_userdetail['model'] = {
-                        'id': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
-                        #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
-                        'username': fields.String(required=True, description='email'),
-                        #'password': fields.String(required=True, description='user password'),
-                        'name': fields.String(required=False, description='User name'),
-                        'active': fields.Boolean(required=False, description='user is activated ?'),
-                        #'activationlink': fields.String(readOnly=True, required=False, description='link to activate the user'),
-                        #'activationlinkvalidity': fields.Integer(readOnly=True, required=False, description='validity of the activationlink in hours since creation time'),
-                        'create_date': fields.DateTime(readOnly=True, required=False), 
-                        }
 
 _token = {}
 _token['name'] = 'di.board user token'
@@ -49,8 +26,8 @@ _token['model'] = {
                     }
 
 """ 
-Board 
-----------------------------------------------------------------------
+    Board 
+    ----------------------------------------------------------------------
 """
 _board = {}
 _board['name'] = 'Bulletin Board public detail'
@@ -75,7 +52,7 @@ _board['model'] = {
                     'gpsele': fields.Float(required=False, description='Board location gps elevation'),
                     #'gpstime': fields.DateTime(required=False),
 
-                    'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
+                    #'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
                     #'qrcode': fields.String(required=False, description='Link to QR Code'),
 
                     'create_date': fields.DateTime(readOnly=True, required=False), 
@@ -125,7 +102,6 @@ _boarddetail = {}
 _boarddetail['name'] = 'Bulletin Board details'
 _boarddetail['model'] = {
                             'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
-                            #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
                             'name': fields.String(required=True, description='Board name'),
                             'description': fields.String(required=True, description='Board description'),
                             'state': fields.String(required=True, description='Board location state'),
@@ -140,8 +116,7 @@ _boarddetail['model'] = {
                             'gpsele': fields.Float(required=False, description='Board location gps elevation'),
                             'gpstime': fields.DateTime(readOnly=True, required=False),
 
-                            'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
-                            #'qrcode': fields.String(required=False, description='Link to QR Code'),
+                            #'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
 
                             'create_date': fields.DateTime(readOnly=True, required=False),
 

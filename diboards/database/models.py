@@ -121,7 +121,7 @@ class User(db.Model):
     def verify_emailadress(self):
 
         dummy = re.match(User._emailverificationre,self.username)
-        log.debug('validate username {} with regex {} : {!s}'.format(self.username, User._emailverificationre, dummy))
+        log.info('validate username {} with regex {} : {!s}'.format(self.username, User._emailverificationre, dummy))
 
         if dummy is None:
             return False
@@ -140,7 +140,7 @@ class User(db.Model):
     """
 
     # constructor and representation
-    def __init__(self, username, password, name='', active = False, activationlinkvalidity = 24):
+    def __init__(self, username, password, name='', active = False):
         self.uuid = str(uuid.uuid4())
         self.create_date = datetime.utcnow()
         

@@ -1,6 +1,3 @@
-# imports & globals
-# -----------------------------------------------------
-
 import os
 
 from database import db
@@ -22,6 +19,7 @@ def create_board(data, AuthUser):
     if AuthUser is None:
         return 401, None
 
+    """ New Board ID """
     # Parse data and create Board instance
     board = database.models.Board(data)
 
@@ -30,7 +28,7 @@ def create_board(data, AuthUser):
     db.session.commit()
 
     """ Subscription """
-    subscription = database.models.Subscription(userid = AuthUser.id, boardid = board.id, roleid = 'OWNER', flowid = 'NEW', flowstatus = 'CREATED', active = True)
+    subscription = database.models.Subscription(userid = AuthUser.id, boardid = board.id, roleid = 'OWNER', flowid = 'CREATE', flowstatus = 'CREATED', active = True)
     db.session.add(subscription)
     db.session.commit()
 
@@ -45,7 +43,7 @@ def update_board(id, data, AuthUser):
 
     """ retrieve board """
     diboard = database.models.Board.query.get(id)
-    if diboard is None:
+    if (diboard is None) or (not diboard.active):
         return 404, None
 
     """ check ownership """
@@ -59,13 +57,41 @@ def update_board(id, data, AuthUser):
     for key, value in data.items():
         if (key in vars(diboard)):
             setattr(diboard, key, value)
-
+    
+    """ update database """
+    db.session.add(diboard)
+    db.session.commit()
+    
     return 200, diboard
 
-def delete_board(uuid):
-    category = Category.query.filter(Category.id == category_id).one()
-    db.session.delete(category)
+def delete_board(id, AuthUser):
+    """ show board details to an active owner and administrator """
+
+    """ User Active """
+    if AuthUser.active == False:
+        return 403
+
+    """ retrieve board """
+    diboard = database.models.Board.query.get(id)
+    if (diboard is None) or (not diboard.active):
+        return 404
+
+    """ check ownership """
+    subscription = database.models.Subscription.query.get((AuthUser.id, id))
+    if subscription is None:
+        return 403, None
+    elif subscription.roleid not in ['OWNER', 'ADMIN']:
+        return 403
+
+    """ update active = false == Deleted """
+    diboard.active = False
+    
+    """ update database """
+    db.session.add(diboard)
     db.session.commit()
+    
+    return 200
+
     
 def read_board(id, AuthUser):
     """ show board details to an active owner and administrator """
@@ -76,7 +102,7 @@ def read_board(id, AuthUser):
 
     """ retrieve board """
     diboard = database.models.Board.query.get(id)
-    if diboard is None:
+    if (diboard is None) or (not diboard.active):
         return 404, None
 
     """ check owner """
@@ -85,8 +111,8 @@ def read_board(id, AuthUser):
         return 403, None
     elif subscription.roleid not in ['OWNER', 'ADMIN']:
         return 403, None
-    else:
-        return 200, diboard
+
+    return 200, diboard
 
 
 def list_boards(params = None):
@@ -169,23 +195,25 @@ def delete_user(AuthUser):
     return 200
 
 
-def update_user(id, data):
-    user = database.models.User.query.filter(database.models.User.id == id).one()
-    
-    if user is None:
-        return 404
+def update_user(data, AuthUser):
 
+    """ User Active """
+    if AuthUser.active == False:
+        return 403, None    
+   
+    """ update all fields """
     for key, value in data.items():
-        if key == 'name':
-            user.name = value
-        elif key == 'active':
-            user.active = value
-        elif key == 'password':
-            user.hash_password(value)
-
-    db.session.add(user)
+        if key == 'password':
+            AuthUser.hash_password(value)
+        else:
+            if (key in vars(AuthUser)):
+                setattr(AuthUser, key, value)
+ 
+    """ db update """        
+    db.session.add(AuthUser)
     db.session.commit()
-    return 200
+    
+    return 200, AuthUser
 
 def activate_user(id,email):
 
@@ -249,7 +277,6 @@ def select_user(AuthUser):
     else:
         return 200, user
         
-
 def list_user(user):
     log.info('retrieve board liste by user {}'.format(user.username))
     userlist = database.models.User.query.all()

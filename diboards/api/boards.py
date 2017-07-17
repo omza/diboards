@@ -18,8 +18,6 @@ boardnew = api.model(_newboard['name'], _newboard['model'])
 
 qr = api.model(_qr['name'], _qr['model'])
 
-
-
 # Endpoints
 # ------------------------------------------------------------------------------------------------
 
@@ -52,7 +50,7 @@ class BoardCollection(Resource):
             if httpstatus == 200:
                 return diboards, 200
             else:
-                api.abort(httpstatus, BoardCollection._responses['get'][httpstatus])
+                api.abort(httpstatus, __class__._responses['get'][httpstatus])
         else:
             api.abort(500)
 
@@ -69,14 +67,13 @@ class BoardCollection(Resource):
         httpstatus ,diboards = create_board(data, AuthUser)
 
         # return httpstatus, object
-        if httpstatus in BoardCollection._responses['post']:
+        if httpstatus in __class__._responses['post']:
             if httpstatus == 200:
                 return diboards, 200
             else:
-                api.abort(httpstatus, BoardCollection._responses['post'][httpstatus])
+                api.abort(httpstatus, __class__._responses['post'][httpstatus])
         else:
             api.abort(500)
-
 
 @api.route('/<int:id>')
 @api.param('id', 'The unique identifier of a bulletin board')
@@ -90,6 +87,11 @@ class BoardItem(Resource):
                   404: 'No Boards found'
                   }
     _responses['put'] = _responses['get']
+    _responses['delete'] = {200: 'Board deleted',
+                              401: 'Missing Authentification or wrong credentials',
+                              403: 'Insufficient rights or Bad request',
+                              404: 'No Boards found'
+                              }
 
     
     """ retrieve board """
@@ -101,11 +103,11 @@ class BoardItem(Resource):
         httpstatus, diboard = read_board(id, AuthUser )
 
         # return httpstatus, object
-        if httpstatus in BoardCollection._responses['get']:
+        if httpstatus in __class__._responses['get']:
             if httpstatus == 200:
                 return diboard, 200
             else:
-                api.abort(httpstatus, BoardCollection._responses['get'][httpstatus])
+                api.abort(httpstatus, __class__._responses['get'][httpstatus])
         else:
             api.abort(500)
     
@@ -123,14 +125,32 @@ class BoardItem(Resource):
         httpstatus, diboard = update_board(id, data, AuthUser)
 
         # return httpstatus, object
-        if httpstatus in BoardCollection._responses['put']:
+        if httpstatus in __class__._responses['put']:
             if httpstatus == 200:
                 return diboard, 200
             else:
-                api.abort(httpstatus, BoardCollection._responses['put'][httpstatus])
+                api.abort(httpstatus, __class__._responses['put'][httpstatus])
         else:
             api.abort(500)
 
+    """ delete board """
+    @api.doc(description='owner or administrator delete their board', security='basicauth', responses=_responses['delete'])
+    @auth.basicauth.login_required
+    def delete(self, id):
+        
+        AuthUser = g.user
+
+        """ delete Board """
+        httpstatus = delete_board(id, AuthUser)
+
+        """ return httpstatus, object  """
+        if httpstatus in __class__._responses['delete']:
+            if httpstatus == 200:
+                return diboard, 200
+            else:
+                api.abort(httpstatus, __class__._responses['delete'][httpstatus])
+        else:
+            api.abort(500)
 
 @api.route('/<int:id>/qr')
 @api.param('uuid', 'The unique identifier of a bulletin board')
