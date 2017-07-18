@@ -27,15 +27,18 @@ api = Namespace('user', description='user related operations')
 
 """
 
-user_new = api.model('di.board users sign up', {'username': fields.String(required=True, description='email'),
+user_new = api.model('di.board users sign up', {'username': fields.String(required=True, description='email == username'),
                                                 'password': fields.String(required=True, description='user password'),
                                                 'name': fields.String(required=False, description='User name'),
+                                                'activationvalidity': fields.Integer(required=False, description='validity of activation link (in hours)'),
                                                 })
 
 user_detail = api.model('di.board user details', {'id': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
                                                     #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
                                                     'username': fields.String(required=True, description='email'),
                                                     'name': fields.String(required=False, description='User name'),
+                                                    'termsofservicelink': fields.String(readOnly=True,required=False, description='link to terms of services'),
+                                                    'termsofserviceaccepted': fields.DateTime(readOnly=True, required=False, description='date user has accepted terms of service'),
                                                     'active': fields.Boolean(required=False, description='user is activated ?'),
                                                     'create_date': fields.DateTime(readOnly=True, required=False), 
                                                     })
@@ -197,6 +200,7 @@ class UserInstance(Resource):
         email = data.get('username')
         password = data.get('password')
         name = data.get('name')
+        activationvalidity = data.get('activationvalidity')
 
         """ logging """
         log.info('create user: {!s}{!s}'.format(email, name))
@@ -206,11 +210,11 @@ class UserInstance(Resource):
             api.abort(403, __class__._responses['post'][403])
 
         """ create user instance """
-        diboarduser = User(email,password, name)
+        diboarduser = User(username=email, password=password, name=name, activationvalidity=activationvalidity)
 
         """ email adress not valid ? """
         if not diboarduser.verify_emailadress():
-            api.abort(httpstatus, __class__._responses['post'][httpstatus])
+            api.abort(400, __class__._responses['post'][400])
         
         """ db update """
         db.session.add(diboarduser)
@@ -222,11 +226,12 @@ class UserInstance(Resource):
 @api.route('/activate')
 @api.param(name = 'id', description = 'The unique identifier of a di.board user',type = int, required=True)
 @api.param(name='email', description='emailaddress to activate', type=str, required=True)
+@api.param(name='termsofserviceaccepted', description='does user accept known terms of service', type=bool, required=True)
 class Activate(Resource):
 
     # response codes
     _responses = {200: 'User activated', 
-                  403: 'Insufficient rights or bad link', 
+                  403: 'Insufficient rights, user has not accepted terms of service or bad link', 
                   404: 'User not found', 
                   408: 'activation link is not valid anymore or user is already activated'
                   }
@@ -238,23 +243,35 @@ class Activate(Resource):
         try:
             id = request.args.get('id',default=0, type=int)
             email = request.args.get('email',default='', type=str)
+            termsofserviceaccepted = request.args.get('termsofserviceaccepted',default=False, type=bool)
         except ValueError:
             id = 0
             email = ''
+            termsofserviceaccepted  = False
         
         log.info('activate id:{!s} and email:{}'.format(id,email))
+
+        """ terms of service accepted ? """
+        if not termsofserviceaccepted:
+            api.abort(403, __class__._responses[403])
 
         """ retrieve user """
         diboarduser = User.query.get(id)
         if (diboarduser is None):
             api.abort(404, __class__._responses[404])
 
-        """ already activated ? """
-        if (diboarduser.active):
+        """ doublecheck with eMail """
+        if (diboarduser.username != email):
+            api.abort(403, __class__._responses[403])
+
+        """ already activated or link is not valid anymore? """
+        if (diboarduser.active) or (not diboarduser.verify_activationvalidity):
             api.abort(408, __class__._responses[408])
 
         """ activate user and db update """
         diboarduser.active = True
+        diboarduser.termsofserviceaccepted = datetime.utcnow()
+
         db.session.add(diboarduser)
         db.session.commit()
 

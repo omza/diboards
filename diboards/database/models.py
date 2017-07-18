@@ -92,7 +92,9 @@ class User(db.Model):
     name = db.Column(db.String(32))
     create_date = db.Column(db.DateTime)
     #activationlink = db.Column(db.String(128))
-    #activationlinkvalidity = db.Column(db.Integer)
+    activationvalidity = db.Column(db.DateTime)
+    termsofservicelink = db.Column(db.String(128))
+    termsofserviceaccepted = db.Column(db.DateTime)
     boards = db.relationship("Subscription", back_populates="user")
     
     # methods
@@ -129,18 +131,15 @@ class User(db.Model):
             return True
         pass
 
-    """
-    def verify_activationvalidity(self):
-        validity = self.create_date + timedelta(hours=self.activationlinkvalidity) 
-        if (datetime.utcnow() <= validity) or (self.activationlinkvalidity == 0):
+    """ activation valid (in timeframe)? """
+    def verify_activationvalidity(self):     
+        if (datetime.utcnow() <= self.activationvalidity):
             return True
         else:
-            self.activationlinkvalidity = 0
             return False
-    """
 
     # constructor and representation
-    def __init__(self, username, password, name='', active = False):
+    def __init__(self, username, password, name='', active = False, activationvalidity = 24):
         self.uuid = str(uuid.uuid4())
         self.create_date = datetime.utcnow()
         
@@ -150,13 +149,9 @@ class User(db.Model):
         self.name = name
         self.active = active
 
-        """
-        self.activationlinkvalidity = activationlinkvalidity
-        if app.config['SERVER_NAME'] is None:
-            self.activationlink = 'localhost:' + str(app.config['PORT']) + '/user/activate?id=' + str(self.id) + '&email=' + self.username
-        else:
-            self.activationlink = app.config['SERVER_NAME'] + '/user/activate?id=' + str(self.id) + '&email=' + self.username
-        """
+        self.activationvalidity = self.create_date + timedelta(hours=activationvalidity)
+        self.termsofservicelink = app.config['DIBOARDS_PATH_TERMSOFSERVICE']
+
     def __repr__(self):
         return '<User %r>' % self.username
 

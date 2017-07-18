@@ -6,24 +6,6 @@ from flask_restplus import fields
     _['fields'] = {}
 """
 
-_user = {}
-_user['name'] = 'di.board users public data'
-_user['model'] = {
-                    #'id': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
-                    #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
-                    'username': fields.String(required=True, description='email'),
-                    #'password': fields.String(required=True, description='user password'),
-                    'name': fields.String(required=False, description='User name'),
-                    #'active': fields.Boolean(required=False, description='user is activated ?'),
-                    #'create_date': fields.DateTime(readOnly=True, required=False), 
-                    }
-
-_token = {}
-_token['name'] = 'di.board user token'
-_token['model'] = {
-                    'token': fields.String(readOnly=True, required=True, description='Authentification by token'),
-                    'expiration': fields.Integer(readOnly=True, required=False, description='token expires in ... seconds'), 
-                    }
 
 """ 
     Board 
