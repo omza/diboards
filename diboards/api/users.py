@@ -30,6 +30,8 @@ api = Namespace('user', description='user related operations')
 user_new = api.model('di.board users sign up', {'username': fields.String(required=True, description='email == username'),
                                                 'password': fields.String(required=True, description='user password'),
                                                 'name': fields.String(required=False, description='User name'),
+                                                'pwresetquestion': fields.String(required=True, description='question for password reset'),
+                                                'pwresetanswer': fields.String(required=True, description='secret answer for password reset'),
                                                 'activationvalidity': fields.Integer(required=False, description='validity of activation link (in hours)'),
                                                 })
 
@@ -75,7 +77,16 @@ user_subscriptions = api.model('Bulletin Board public detail', {
 
                     'create_date': fields.DateTime(readOnly=True, required=False), 
                 })
-        
+
+user_pwreset = api.model('di.board password reset question', {'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
+                                                   'username': fields.String(readOnly=True,required=True, description='email == username'),
+                                                   'pwresetquestion': fields.String(readOnly=True, required=True, description='question for password reset'),
+                                                })
+
+user_new_pw = api.model('di.board new password (reset)', {'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
+                                                   'username': fields.String(readOnly=True,required=True, description='email == username'),
+                                                   'password': fields.String(readOnly=True, required=True, description='new password after password reset'),
+                                                })     
 
 
 """ Endpoints ---------------------------------------------------------------------------------------------------   
@@ -84,6 +95,7 @@ user_subscriptions = api.model('Bulletin Board public detail', {
         /user/activate
         /user/token
         /user/subscription
+        /user/pwreset
 
 """
 
@@ -276,6 +288,104 @@ class Activate(Resource):
         db.session.commit()
 
         return 200
+
+
+"""
+    Password reset with secret answer (pwresetanswer_hash) to a pw reset question (pwresetquestion)
+    
+    /pwreset [GET] send user id an pw reset question in the response body. Need user id or email/account
+    /pwreset [POST] reset the user password and send the new one in the response body. Need user id or email/account AND the secret answer (pwresetanswer_hash)
+   
+"""
+@api.route('/pwreset')
+@api.param(name='id', description='The unique identifier of a di.board user',type=int, required=False)
+@api.param(name='email', description='emailaddress/ account', type=str, required=False)
+@api.param(name='pwresetanswer', description='does user accept known terms of service', type=str, required=False)
+class PwReset(Resource):
+
+    # response codes
+    _responses = {}
+    _responses['get'] = {
+                        200: ('Success', user_pwreset), 
+                        404: 'User not found'
+                        }
+
+    _responses['post'] =    {
+                            200: ('Success', user_new_pw),
+                            403: 'Insufficient rights e.g. secret answer is not correct',
+                            404: 'User not found'
+                            }
+
+
+    """ send pw reset question """
+    @api.doc(description='get pw reset question for a diboard user', responses=_responses['get'])
+    @api.marshal_with(user_pwreset)
+    def get(self):
+
+        """ parse request params """   
+        try:
+            id = request.args.get('id',default=0, type=int)
+            email = request.args.get('email',default='', type=str)
+            pwresetanswer = request.args.get('termsofserviceaccepted',default='', type=str)
+         
+        except ValueError:
+            id = 0
+            email = ''
+            pwresetanswer = ''
+
+        log.info('reset password question for user id:{!s} and email:{}'.format(id,email))
+
+        """ retrieve user """
+        diboarduser = User.query.get(id)
+        if (diboarduser is None):
+            diboarduser = User.query.filter(username = email).first()
+            if (diboarduser is None):
+                api.abort(404, __class__._responses['get'][404])
+
+        """ prepare response """
+        pwresetquestion = {'id' : diboarduser.id, 'username': diboarduser.username, 'pwresetquestion': diboarduser.pwresetquestion}
+        return pwresetquestion, 200
+
+
+    """ pw reset question """
+    @api.doc(description='reset password for a diboard user', responses=_responses['post'])
+    @api.marshal_with(user_new_pw)
+    def post(self):
+        
+        """ parse request params """   
+        try:
+            id = request.args.get('id',default=0, type=int)
+            email = request.args.get('email',default='', type=str)
+            pwresetanswer = request.args.get('termsofserviceaccepted',default='', type=str)
+         
+        except ValueError:
+            id = 0
+            email = ''
+            pwresetanswer = ''
+
+        log.info('reset password for user id:{!s} and email:{}'.format(id,email))
+
+        """ retrieve user """
+        diboarduser = User.query.get(id)
+        if (diboarduser is None):
+            diboarduser = User.query.filter(username = email).first()
+            if (diboarduser is None):
+                api.abort(404, __class__._responses['post'][404])
+
+        """ check secret answer """
+        if (not diboarduser.verify_pwresetanswer):
+            api.abort(403, __class__._responses['post'][403])
+
+        """ reset password """
+        password = 'neuespassword'
+        diboarduser.hash_password(password)
+        db.session.add(diboarduser)
+        db.session.commit()
+
+        """ prepare response """
+        pwreset = {'id' : diboarduser.id, 'username': diboarduser.username, 'password': password}
+        return pwreset, 200
+
         
 @api.route('/token')
 @api.param(name = 'expiration', description = 'access token validity in seconds (default 10 min.)', type = int)

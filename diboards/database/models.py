@@ -95,6 +95,9 @@ class User(db.Model):
     activationvalidity = db.Column(db.DateTime)
     termsofservicelink = db.Column(db.String(128))
     termsofserviceaccepted = db.Column(db.DateTime)
+    pwresetquestion = db.Column(db.String(32))
+    pwresetanswer_hash = db.Column(db.String(128))
+
     boards = db.relationship("Subscription", back_populates="user")
     
     # methods
@@ -103,6 +106,12 @@ class User(db.Model):
         
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
+
+    def hash_pwresetanswer(self, pwresetanswer):
+        self.pwresetanswer_hash = pwd_context.encrypt(pwresetanswer)
+        
+    def verify_pwresetanswer(self, pwresetanswer):
+        return pwd_context.verify(pwresetanswer, self.pwresetanswer_hash)
 
     def generate_auth_token(self, expiration = 600):
         s = Serializer(app.config['SECRET_KEY'], expires_in = expiration)
@@ -139,7 +148,7 @@ class User(db.Model):
             return False
 
     # constructor and representation
-    def __init__(self, username, password, name='', active = False, activationvalidity = 24):
+    def __init__(self, username, password, pwresetquestion, pwresetanswer, name='', active = False, activationvalidity = 24):
         self.uuid = str(uuid.uuid4())
         self.create_date = datetime.utcnow()
         
@@ -151,6 +160,9 @@ class User(db.Model):
 
         self.activationvalidity = self.create_date + timedelta(hours=activationvalidity)
         self.termsofservicelink = app.config['DIBOARDS_PATH_TERMSOFSERVICE']
+
+        self.pwresetquestion = pwresetquestion
+        self.hash_pwresetanswer(pwresetanswer)
 
     def __repr__(self):
         return '<User %r>' % self.username

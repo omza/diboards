@@ -141,7 +141,7 @@ tmp_upload_dir = None
 #
 
 errorlog = '/usr/log/gunicorn.error.log'
-loglevel = 'debug'
+loglevel = 'info'
 accesslog = '/usr/log/gunicorn.access.log'
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
