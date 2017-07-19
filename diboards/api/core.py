@@ -130,7 +130,7 @@ def list_boards(params = None):
             except:
                 return 403, None
     boardsfilter = boardsfilter[:-5]       
-    log.info('retrieve board liste with filters {!s}'.format(boardsfilter)) 
+    log.info('retrieve board list with filters {!s}'.format(boardsfilter)) 
 
     # retrieve boardlist
     boardlist = database.models.Board.query.filter(boardsfilter).all()

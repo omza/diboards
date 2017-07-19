@@ -4,7 +4,7 @@ from auth import basicauth
 from database import db
 from database.models import User, Board, Subscription
 
-import os
+import os, random, string
 from datetime import datetime, timedelta
 import pyqrcode
 
@@ -47,14 +47,14 @@ user_detail = api.model('di.board user details', {'id': fields.Integer(readOnly=
 
 user_update = api.model('di.board users update', {'password': fields.String(required=False, description='user password'),
                                                     'name': fields.String(required=False, description='User name'),
-                                                    'active': fields.Boolean(required=False, description='user is activated ?')
+                                                    #'active': fields.Boolean(required=False, description='user is activated ?')
                                                     })
 
 user_token = api.model('di.board user token', {'token': fields.String(readOnly=True, required=True, description='Authentification by token'),
                                                 'expiration': fields.Integer(readOnly=True, required=False, description='token expires in ... seconds'), 
                                                 })
 
-user_subscriptions = api.model('Bulletin Board public detail', {
+board_public = api.model('Bulletin Board public detail', {
                     'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
                     #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
                     'name': fields.String(required=True, description='Board name'),
@@ -78,6 +78,20 @@ user_subscriptions = api.model('Bulletin Board public detail', {
                     'create_date': fields.DateTime(readOnly=True, required=False), 
                 })
 
+subscription = api.model('Users Subscription', 
+    {
+    'roleid': fields.String(readOnly=True, required=True, description='subscription role'),
+    'flowid': fields.String(readOnly=True, required=True, description='subscription process'),
+    'flowstatus': fields.String(readOnly=True, required=True, description='subscription process status'),
+    'create_date': fields.DateTime(readOnly=True, required=True),
+    'board': fields.Nested(board_public),
+    })
+
+user_subscriptions = user_detail.clone('Bulletin Board public detail', 
+    {
+        'subscriptions': fields.List(fields.Nested(subscription)),
+    })
+
 user_pwreset = api.model('di.board password reset question', {'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
                                                    'username': fields.String(readOnly=True,required=True, description='email == username'),
                                                    'pwresetquestion': fields.String(readOnly=True, required=True, description='question for password reset'),
@@ -86,11 +100,9 @@ user_pwreset = api.model('di.board password reset question', {'id': fields.Integ
 user_new_pw = api.model('di.board new password (reset)', {'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
                                                    'username': fields.String(readOnly=True,required=True, description='email == username'),
                                                    'password': fields.String(readOnly=True, required=True, description='new password after password reset'),
-                                                })     
-
+                                                })
 
 """ Endpoints ---------------------------------------------------------------------------------------------------   
-
         /user
         /user/activate
         /user/token
@@ -175,13 +187,13 @@ class UserInstance(Resource):
         db.session.commit()
 
         return AuthUser, 200
-        
-    """ delete user """
+    
+
     @api.doc(description='delete an user', security='basicauth', responses = _responses['delete'])
     @basicauth.login_required
     def delete(self):
                 
-        """ parse request """
+        """ deactivate the authorized user """
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['post'][401])
@@ -222,7 +234,7 @@ class UserInstance(Resource):
             api.abort(403, __class__._responses['post'][403])
 
         """ create user instance """
-        diboarduser = User(username=email, password=password, name=name, activationvalidity=activationvalidity)
+        diboarduser = User(data)
 
         """ email adress not valid ? """
         if not diboarduser.verify_emailadress():
@@ -306,7 +318,8 @@ class PwReset(Resource):
     # response codes
     _responses = {}
     _responses['get'] = {
-                        200: ('Success', user_pwreset), 
+                        200: ('Success', user_pwreset),
+                        403: 'Insufficient rights e.g. User ist not activated',
                         404: 'User not found'
                         }
 
@@ -336,11 +349,18 @@ class PwReset(Resource):
         log.info('reset password question for user id:{!s} and email:{}'.format(id,email))
 
         """ retrieve user """
-        diboarduser = User.query.get(id)
-        if (diboarduser is None):
-            diboarduser = User.query.filter(username = email).first()
+        if (id == 0) and (email == ''):
+            api.abort(404, __class__._responses['get'][404])
+        else:
+            diboarduser = User.query.get(id)
             if (diboarduser is None):
-                api.abort(404, __class__._responses['get'][404])
+                diboarduser = User.query.filter(User.username == email).first()
+                if (diboarduser is None):
+                    api.abort(404, __class__._responses['get'][404])
+
+        """ User Active ? """
+        if diboarduser.active == False:
+            api.abort(403, __class__._responses['get'][403]) 
 
         """ prepare response """
         pwresetquestion = {'id' : diboarduser.id, 'username': diboarduser.username, 'pwresetquestion': diboarduser.pwresetquestion}
@@ -356,7 +376,7 @@ class PwReset(Resource):
         try:
             id = request.args.get('id',default=0, type=int)
             email = request.args.get('email',default='', type=str)
-            pwresetanswer = request.args.get('termsofserviceaccepted',default='', type=str)
+            pwresetanswer = request.args.get('pwresetanswer',default='', type=str)
          
         except ValueError:
             id = 0
@@ -366,18 +386,25 @@ class PwReset(Resource):
         log.info('reset password for user id:{!s} and email:{}'.format(id,email))
 
         """ retrieve user """
-        diboarduser = User.query.get(id)
-        if (diboarduser is None):
-            diboarduser = User.query.filter(username = email).first()
+        if (id == 0) and (email == ''):
+            api.abort(404, __class__._responses['get'][404])
+        else:
+            diboarduser = User.query.get(id)
             if (diboarduser is None):
-                api.abort(404, __class__._responses['post'][404])
+                diboarduser = User.query.filter(User.username == email).first()
+                if (diboarduser is None):
+                    api.abort(404, __class__._responses['get'][404])
+
+        """ User Active ? """
+        if diboarduser.active == False:
+            api.abort(403, __class__._responses['get'][403])
 
         """ check secret answer """
-        if (not diboarduser.verify_pwresetanswer):
+        if (not diboarduser.verify_pwresetanswer(pwresetanswer)):
             api.abort(403, __class__._responses['post'][403])
 
         """ reset password """
-        password = 'neuespassword'
+        password = ''.join(random.choice(string.ascii_lowercase) for i in range(10))
         diboarduser.hash_password(password)
         db.session.add(diboarduser)
         db.session.commit()
@@ -429,8 +456,9 @@ class Token(Resource):
 @api.route('/subscriptions')
 class Subscriptions(Resource):
     
-    # swagger responses   
-    _responses = {200: ('Success', user_subscriptions),
+    """ swagger response documentation as class var """
+    _responses = {}   
+    _responses['get'] = {200: ('Success', user_subscriptions),
                   401: 'Missing Authentification or wrong credentials',
                   403: 'Insufficient rights',
                   404: 'No Subscriptions found'
@@ -441,14 +469,23 @@ class Subscriptions(Resource):
     @api.marshal_with(user_subscriptions)
     def get(self):
 
-        # retrieve boardlist
-        #httpstatus, diboards = list_boards(g.user)
+        """ list of boards user subscribed to """
+        AuthUser = g.get('user')
+        if AuthUser is None:
+             api.abort(401, __class__._responses['get'][401])
+        data = request.json
 
-        # return httpstatus, object
-        if httpstatus in __class__._responses:
-            if httpstatus == 200:
-                return diboards, 200
-            else:
-                api.abort(httpstatus, __class__._responses[httpstatus])
-        else:
-            api.abort(500)
+        """ logging """
+        log.info('select subscriptions for user: {!s}'.format(AuthUser.id))
+
+        """ User Active ? """
+        if AuthUser.active == False:
+            api.abort(403, __class__._responses['get'][403]) 
+
+
+        """ select subscriptions with user id """
+        subscriptionresult = User.query.join(Subscription, Board).filter(User.id == AuthUser.id, Subscription.active == True, Board.active == True).all()
+
+
+        """ prepare return dictionary """
+        return subscriptionresult, 200

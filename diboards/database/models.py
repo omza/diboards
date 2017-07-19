@@ -109,9 +109,16 @@ class User(db.Model):
 
     def hash_pwresetanswer(self, pwresetanswer):
         self.pwresetanswer_hash = pwd_context.encrypt(pwresetanswer)
+    
+    """ check secret answer to pw reset question """
+    def verify_pwresetanswer(self, pwresetanswer = None):
         
-    def verify_pwresetanswer(self, pwresetanswer):
-        return pwd_context.verify(pwresetanswer, self.pwresetanswer_hash)
+        if (pwresetanswer is None) or (pwresetanswer == ''):
+            returnvalue = False
+        else:
+            returnvalue = pwd_context.verify(pwresetanswer, self.pwresetanswer_hash)
+
+        return returnvalue
 
     def generate_auth_token(self, expiration = 600):
         s = Serializer(app.config['SECRET_KEY'], expires_in = expiration)
@@ -147,22 +154,32 @@ class User(db.Model):
         else:
             return False
 
-    # constructor and representation
-    def __init__(self, username, password, pwresetquestion, pwresetanswer, name='', active = False, activationvalidity = 24):
+    """ constructor """
+    def __init__(self, data):
+
+        """ auto keys """
+        self.active = False
         self.uuid = str(uuid.uuid4())
         self.create_date = datetime.utcnow()
-        
-        self.username = username
-        self.hash_password(password)
-
-        self.name = name
-        self.active = active
-
-        self.activationvalidity = self.create_date + timedelta(hours=activationvalidity)
         self.termsofservicelink = app.config['DIBOARDS_PATH_TERMSOFSERVICE']
 
-        self.pwresetquestion = pwresetquestion
-        self.hash_pwresetanswer(pwresetanswer)
+        log.info('A new User raises with uuid {}'.format(self.uuid))
+
+        """ parse and log data dictionary into instance var """
+        for key, value in data.items():
+
+            if key == 'password':
+                self.hash_password(value)
+            elif key == 'pwresetanswer':
+                self.hash_pwresetanswer(value)
+            elif key == 'activationvalidity':
+                self.activationvalidity = self.create_date + timedelta(hours=value)
+            elif (not key in vars(self)) and (key in vars(User)):
+                setattr(self, key, value)
+            
+        for key, value in vars(self).items():   
+            log.info('User {} - member: {} = {!s}'.format(self.uuid,key,value))
+        
 
     def __repr__(self):
         return '<User %r>' % self.username
