@@ -1,4 +1,4 @@
-from flask import request, g, current_app as app
+from flask import request, g, current_app as app, json
 from flask_restplus import Namespace, Resource, fields
 from auth import basicauth
 from database import db
@@ -55,52 +55,46 @@ user_token = api.model('di.board user token', {'token': fields.String(readOnly=T
                                                 })
 
 board_public = api.model('Bulletin Board public detail', {
-                    'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
-                    #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
-                    'name': fields.String(required=True, description='Board name'),
-                    'description': fields.String(required=True, description='Board description'),
-                    'state': fields.String(required=True, description='Board location state'),
-                    'city': fields.String(required=True, description='Board location City'),
-                    'zip': fields.String(required=True, description='Board location zip code'),
-                    'street': fields.String(required=True, description='Board location street'),
-                    'housenumber': fields.String(required=True, description='Board location House Number'),
-                    'building': fields.String(required=True, description='Board location Building description'),
-    
-                    'ownercompany': fields.String(required=True, description='Board owner Company'),
-                    'ownercity': fields.String(required=True, description='Board owner City'),
-                    'ownerstate': fields.String(required=True, description='Board owner state'),
+    'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
+    #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
+    'name': fields.String(required=True, description='Board name'),
+    'description': fields.String(required=True, description='Board description'),
+    'state': fields.String(required=True, description='Board location state'),
+    'city': fields.String(required=True, description='Board location City'),
+    'zip': fields.String(required=True, description='Board location zip code'),
+    'street': fields.String(required=True, description='Board location street'),
+    'housenumber': fields.String(required=True, description='Board location House Number'),
+    'building': fields.String(required=True, description='Board location Building description'),    
+    'ownercompany': fields.String(required=True, description='Board owner Company'),
+    'ownercity': fields.String(required=True, description='Board owner City'),
+    'ownerstate': fields.String(required=True, description='Board owner state'),
+    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
+    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
+    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
+    #'gpstime': fields.DateTime(required=False, description='Board location gps elevation'),
+    'create_date': fields.DateTime(readOnly=True, required=False)})
 
-                    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
-                    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
-                    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
-                    'gpstime': fields.DateTime(required=False, description='Board location gps elevation'),
-
-                    'create_date': fields.DateTime(readOnly=True, required=False), 
-                })
-
-subscription = api.model('Users Subscription', 
-    {
-    'roleid': fields.String(readOnly=True, required=True, description='subscription role'),
-    'flowid': fields.String(readOnly=True, required=True, description='subscription process'),
+subscription = api.model('Users Subscription', {
+    #'userid': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
+    #'boardid': fields.Integer(readOnly=True, required=False, description='The identifier of a user'),
+    'role': fields.String(readOnly=True, required=True, description='subscription role'),
+    'flow': fields.String(readOnly=True, required=True, description='subscription process'),
     'flowstatus': fields.String(readOnly=True, required=True, description='subscription process status'),
     'create_date': fields.DateTime(readOnly=True, required=True),
-    'board': fields.Nested(board_public),
-    })
+    'board': fields.Nested(model=board_public, as_list=True)})
 
-user_subscriptions = user_detail.clone('Bulletin Board public detail', 
-    {
-        'subscriptions': fields.List(fields.Nested(subscription)),
-    })
+user_subscriptions = user_detail.clone('Bulletin Board public detail', {
+    'subscriptions': fields.Nested(attribute='boards',model=subscription,as_list=True)})
 
-user_pwreset = api.model('di.board password reset question', {'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
-                                                   'username': fields.String(readOnly=True,required=True, description='email == username'),
-                                                   'pwresetquestion': fields.String(readOnly=True, required=True, description='question for password reset'),
-                                                })
+user_pwreset = api.model('di.board password reset question', {
+    'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
+    'username': fields.String(readOnly=True,required=True, description='email == username'),
+    'pwresetquestion': fields.String(readOnly=True, required=True, description='question for password reset')})
 
-user_new_pw = api.model('di.board new password (reset)', {'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
-                                                   'username': fields.String(readOnly=True,required=True, description='email == username'),
-                                                   'password': fields.String(readOnly=True, required=True, description='new password after password reset'),
-                                                })
+user_new_pw = api.model('di.board new password (reset)', {
+    'id': fields.Integer(readOnly=True, required=True, description='The identifier of a user'),
+    'username': fields.String(readOnly=True,required=True, description='email == username'),
+    'password': fields.String(readOnly=True, required=True, description='new password after password reset')})
 
 """ Endpoints ---------------------------------------------------------------------------------------------------   
         /user
@@ -136,7 +130,7 @@ class UserInstance(Resource):
     @api.marshal_with(user_detail)
     def get(self):        
         
-        """ parse request """
+        """ show user all its data """
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['post'][401])
@@ -153,13 +147,13 @@ class UserInstance(Resource):
     
 
     """ update user """
-    @api.doc(description='update user', security='basicauth', responses = _responses['get'])
+    @api.doc(description='user can update their own data and settings', security='basicauth', responses = _responses['get'])
     @api.expect(user_update)
     @api.marshal_with(user_detail)
     @basicauth.login_required    
     def put(self):                       
 
-        """ parse request """
+        """ user update own data """
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['get'][401])
@@ -219,7 +213,7 @@ class UserInstance(Resource):
     @api.marshal_with(user_detail)
     def post(self):
         
-        """ parse request """      
+        """ user sign up """      
         data = request.json
         email = data.get('username')
         password = data.get('password')
@@ -263,7 +257,7 @@ class Activate(Resource):
     @api.doc(description='activate a diboard user', responses=_responses)
     def get(self):
         
-        # parse request args       
+        """ activate user / confirm by id and username/email """       
         try:
             id = request.args.get('id',default=0, type=int)
             email = request.args.get('email',default='', type=str)
@@ -331,11 +325,11 @@ class PwReset(Resource):
 
 
     """ send pw reset question """
-    @api.doc(description='get pw reset question for a diboard user', responses=_responses['get'])
+    @api.doc(description='request password reset question for an user identified by id or username', responses=_responses['get'])
     @api.marshal_with(user_pwreset)
     def get(self):
 
-        """ parse request params """   
+        """ pw reset question for a diboard user """   
         try:
             id = request.args.get('id',default=0, type=int)
             email = request.args.get('email',default='', type=str)
@@ -367,12 +361,12 @@ class PwReset(Resource):
         return pwresetquestion, 200
 
 
-    """ pw reset question """
-    @api.doc(description='reset password for a diboard user', responses=_responses['post'])
+    """ pw reset answer """
+    @api.doc(description='reset password for a diboard user if the secret pw-reset answer is correct', responses=_responses['post'])
     @api.marshal_with(user_new_pw)
     def post(self):
         
-        """ parse request params """   
+        """ reset password by given pw reset answer """   
         try:
             id = request.args.get('id',default=0, type=int)
             email = request.args.get('email',default='', type=str)
@@ -424,12 +418,12 @@ class Token(Resource):
                   403: 'Insufficient rights e.g. User ist not activated'
                  }
     
-    @api.doc(description='get_user_token', security='basicauth', responses=_responses)
+    @api.doc(description='request a user acces token for http basic auth with given expiration (default 10 min.)', security='basicauth', responses=_responses)
     @basicauth.login_required
     @api.marshal_with(user_token)
     def get(self):
         
-        """ parse request """
+        """ get user access token """
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses[401])
@@ -458,13 +452,14 @@ class Subscriptions(Resource):
     
     """ swagger response documentation as class var """
     _responses = {}   
-    _responses['get'] = {200: ('Success', user_subscriptions),
-                  401: 'Missing Authentification or wrong credentials',
-                  403: 'Insufficient rights',
-                  404: 'No Subscriptions found'
-                  }
+    _responses['get'] = {
+        200: ('Success', user_subscriptions),
+        401: 'Missing Authentification or wrong credentials',
+        403: 'Insufficient rights',
+        404: 'No Subscriptions found'
+        }
     
-    @api.doc(description='retrieve a list of boards the user is subscribed', security='basicauth', responses=_responses)
+    @api.doc(description='retrieve a list of boards the user is subscribed', security='basicauth', responses=_responses['get'])
     @basicauth.login_required
     @api.marshal_with(user_subscriptions)
     def get(self):
@@ -473,7 +468,6 @@ class Subscriptions(Resource):
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['get'][401])
-        data = request.json
 
         """ logging """
         log.info('select subscriptions for user: {!s}'.format(AuthUser.id))
@@ -482,10 +476,11 @@ class Subscriptions(Resource):
         if AuthUser.active == False:
             api.abort(403, __class__._responses['get'][403]) 
 
+        """ return auth user 
+            filter subscriptions to active
+            filter boards to active
+        """
+        subscriptionsreturn = User.query.filter(User.boards.any(Subscription.active == True)).all()
 
-        """ select subscriptions with user id """
-        subscriptionresult = User.query.join(Subscription, Board).filter(User.id == AuthUser.id, Subscription.active == True, Board.active == True).all()
 
-
-        """ prepare return dictionary """
-        return subscriptionresult, 200
+        return subscriptionsreturn, 200

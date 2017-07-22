@@ -2,9 +2,13 @@ from flask import request, g, send_from_directory
 from flask_restplus import Namespace, Resource
 
 import auth
-from api.core import create_board, list_boards, delete_board, read_board, update_board, create_qrcode
+from api.core import list_boards, delete_board, read_board, update_board, create_qrcode
 from api.serializers import _board, _qr, _newboard, _boarddetail
 
+from database import db
+from database.models import User, Board, Subscription
+
+from datetime import datetime, timedelta
 
 # Logger
 import logging
@@ -55,25 +59,38 @@ class BoardCollection(Resource):
             api.abort(500)
 
     #new board
-    @api.doc(description='create a new diboard', security='basicauth', responses=_responses['post'])
+    @api.doc(description='create an new Board and subscribe user as owner', security='basicauth', responses=_responses['post'])
     @auth.basicauth.login_required
     @api.expect(boardnew)
     @api.marshal_with(boarddetail)
     def post(self):
         
-        AuthUser = g.user
+        """ create a diboard """
+        AuthUser = g.get('user')
+        if AuthUser is None:
+             api.abort(401, __class__._responses['post'][401])
+
+        """ logging """
+        log.info('create a new board for user: {!s}'.format(AuthUser.id))
+
+        """ User Active ? """
+        if AuthUser.active == False:
+            api.abort(403, __class__._responses['post'][403])
+
+        """ parse request data an init a Board instance and associate to user"""
         data = request.json
         
-        httpstatus ,diboards = create_board(data, AuthUser)
+        board = Board(data)
+        subscription = Subscription(role = 'OWNER', flow = 'CREATE', flowstatus = 'CREATED', active = True, create_date = datetime.utcnow())
+        subscription.user = AuthUser
+        board.users.append(subscription)
 
-        # return httpstatus, object
-        if httpstatus in __class__._responses['post']:
-            if httpstatus == 200:
-                return diboards, 200
-            else:
-                api.abort(httpstatus, __class__._responses['post'][httpstatus])
-        else:
-            api.abort(500)
+        """ db update """
+        db.session.add_all([board, subscription])
+        db.session.commit()
+
+        return board, 200
+
 
 @api.route('/<int:id>')
 @api.param('id', 'The unique identifier of a bulletin board')

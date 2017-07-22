@@ -84,7 +84,8 @@ db.init_app(app)
 # --------------------------------------------------------
 if app.debug:
     for key, value in app.config.items():
-        log.debug('{} = {!s}'.format(key, value))
+        if key.find('DIBOARDS') >= 0:
+            log.debug('{} = {!s}'.format(key, value))
 
 
 # main

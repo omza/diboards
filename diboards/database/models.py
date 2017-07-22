@@ -11,6 +11,25 @@ import re
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
+"""
+    subscription db model
+    -------------------------------------------------------------------------
+"""
+class Subscription(db.Model):
+    __tablename__ = 'subscription'
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key = True)
+    board_id = db.Column(db.Integer, db.ForeignKey('board.id'), primary_key = True)
+    
+    role = db.Column(db.String(10))
+    flow = db.Column(db.String(10))
+    flowstatus = db.Column(db.String(10))
+    active = db.Column(db.Boolean)
+    create_date = db.Column(db.DateTime)
+
+    user = db.relationship('User', back_populates="boards")
+    board = db.relationship('Board', back_populates="users")
+
+
 """ 
    Board db model
    -------------------------------------------------------------------------
@@ -81,7 +100,7 @@ class Board(db.Model):
    -------------------------------------------------------------------------
 """
 class User(db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'user'
     _emailverificationre = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$'
 
     id = db.Column(db.Integer, primary_key = True)
@@ -181,33 +200,7 @@ class User(db.Model):
             log.info('User {} - member: {} = {!s}'.format(self.uuid,key,value))
         
 
-    def __repr__(self):
-        return '<User %r>' % self.username
-
-"""
-    subscription db model
-    -------------------------------------------------------------------------
-"""
-class Subscription(db.Model):
-    __tablename__ = 'subscription'
-    userid = db.Column(db.Integer, db.ForeignKey('board.id') ,primary_key = True)
-    boardid = db.Column(db.Integer, db.ForeignKey('users.id') ,primary_key = True)
-    roleid = db.Column(db.String(10))
-    flowid = db.Column(db.String(10))
-    flowstatus = db.Column(db.String(10))
-    active = db.Column(db.Boolean)
-    create_date = db.Column(db.DateTime)
-    user = db.relationship('User', back_populates="boards")
-    board = db.relationship('Board',back_populates="users")
 
 
-    def __init__(self, userid, boardid, roleid, flowid, flowstatus, active = False):
-        self.userid = userid
-        self.boardid = boardid
-        self.roleid = roleid
-        self.flowid = flowid
-        self.flowstatus = flowstatus
-        self.active = active
-        self.create_date = datetime.utcnow()
 
 

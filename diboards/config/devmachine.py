@@ -1,5 +1,5 @@
 # Flask settings
-SERVER_NAME = 'devdiboards.com:5000'
+SERVER_NAME = None
 DEBUG = True  # Do not use debug mode in production
 PORT = 5000
 HOST = '0.0.0.0'
@@ -15,9 +15,9 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///database/db.diboards'
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 # di.boards settings
-DIBOARDS_PATH_QR = 'C:/Users/omza/Downloads/diboards/qr/'
-DIBOARDS_PATH_INCOMMING = 'C:/Users/omza/Downloads/diboards/incomming/'
-DIBOARDS_PATH_OUTGOING = 'C:/Users/omza/Downloads/diboards/outgoing/'
-DIBOARDS_PATH_LOG = 'C:/Users/omza/Downloads/diboards/log/'
+DIBOARDS_PATH_QR = 'E:/Source/Repos/diboards/log/'
+DIBOARDS_PATH_INCOMMING = 'E:/Source/Repos/diboards/log/'
+DIBOARDS_PATH_OUTGOING = 'E:/Source/Repos/diboards/log/'
+DIBOARDS_PATH_LOG = 'E:/Source/Repos/diboards/log/'
 DIBOARDS_LOGLEVEL_CONSOLE = 10 # debug 
 DIBOARDS_LOGLEVEL_FILE = 10 # debug

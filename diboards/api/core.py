@@ -14,25 +14,6 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 # Bulletinboard Logic sector
 # --------------------------------------
-def create_board(data, AuthUser):
-
-    if AuthUser is None:
-        return 401, None
-
-    """ New Board ID """
-    # Parse data and create Board instance
-    board = database.models.Board(data)
-
-    # db update Board 
-    db.session.add(board)
-    db.session.commit()
-
-    """ Subscription """
-    subscription = database.models.Subscription(userid = AuthUser.id, boardid = board.id, roleid = 'OWNER', flowid = 'CREATE', flowstatus = 'CREATED', active = True)
-    db.session.add(subscription)
-    db.session.commit()
-
-    return 200, board
 
 def update_board(id, data, AuthUser):
     """ show board details to an active owner and administrator """
