@@ -1,26 +1,30 @@
 from flask_restplus import Namespace, Resource
-from api.core import postmancollection, reset_database
 
 # Logger
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
-api = Namespace('core', description='di.boards core tools api endpoints')
+api = Namespace('tools', description='di.boards core tools api endpoints')
 
 
 @api. route('/resetdb')
 @api.response(404, 'Could not create db')
-@api.response(201, 'database successfully created.')
 class ResetDatabase(Resource):
     @api.doc('create database')
     def post(self):
         '''create database from scratch'''
+        
+        from database import db
+
         try:
-            reset_database()
-            return None, 201
+            log.warning('try to create db from scratch')
+            db.drop_all()
+            db.create_all()
+            
+            return 200
 
         except:
-            return None, 404
+            api.abort(404, 'Could not create db')
 
 
 @api. route('/postman')
@@ -29,8 +33,16 @@ class ResetDatabase(Resource):
 class PostmanCollection(Resource):
     
     @api.doc('create postman collection')
-    def get(self):           
-        data = postmancollection()
-        return data, 200
+    def get(self):
+        """ retrieve api as postman collection """
+
+        from flask import json
+        from api import api as diboardsapi
+
+        urlvars = False  # Build query strings in URLs
+        swagger = True  # Export Swagger specifications
+        data = diboardsapi.as_postman(urlvars=urlvars, swagger=swagger)
+
+        return json.dumps(data), 200
 
         

@@ -6,7 +6,7 @@ import auth
 from database import db
 from database.models import User, Board, Subscription, QRcode
 
-import os, random, string
+import os
 from datetime import datetime, timedelta
 import pyqrcode
 
@@ -29,6 +29,7 @@ qrnew = api.model('Bulletin Board qrcode',{
     'width': fields.Integer(required=True, description='width of qr code in mm'),
     'height': fields.Integer(required=True, description='height of qr code in mm'),
     'roundedges': fields.Boolean(required=True, description='qr code with rounded edges (Style)')})
+
 
 qrdetail = api.model('Bulletin Board qrcode',{
     'width': fields.Integer(readOnly=True, required=True, description='width of qr code in mm'),
@@ -136,6 +137,8 @@ boardnew = api.model('New Bulletin Board',{
     / : BoardList
 
     /<id:int> : BoardInstance
+
+    /<id:int>/qrcode : BoardQRCode
 """
 
 @api.route('/')
@@ -201,18 +204,15 @@ class BoardList(Resource):
         if AuthUser is None:
              api.abort(401, __class__._responses['post'][401])
         
-        """ parse request data """
-        data = request.json
-
-        """ logging """
+             """ logging """
         log.info('create a new board for user: {!s}'.format(AuthUser.id))
 
         """ User Active ? 
         if AuthUser.active == False:
             api.abort(403, __class__._responses['post'][403])
-        """
-
-        """ parse request data an init a Board instance and associate to user"""
+        """        
+        
+        """ parse request data and init a Board instance and associate to user"""
         data = request.json
         
         board = Board(data)
@@ -231,11 +231,11 @@ class BoardList(Resource):
             os.chmod(qrpath, 0o755)
         qrpath = qrpath + '/'
 
-        qrfile = 'qr-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.png'
+        qrfile = 'qr-40x40-False.png'
         qrfull = qrpath + qrfile
-        while (os.path.exists(qrfull)):
-            qrfile = 'qr-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.png'
-            qrfull = qrpath + qrfile
+
+        if (os.path.exists(qrfull)):
+            os.remove(qrfull)
 
         url = pyqrcode.create(qrfull)
         url.png(qrfull, scale=10, module_color=(255, 45, 139, 255), background=(255, 255, 255, 255), quiet_zone=4)        
@@ -284,6 +284,10 @@ class BoardInstance(Resource):
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['get'][401])
+        
+        """ User Active ? """
+        if AuthUser.active == False:
+            api.abort(403, __class__._responses['get'][403])
 
         """ logging """
         log.info('select all board details for board: {!s}'.format(id))
@@ -317,6 +321,10 @@ class BoardInstance(Resource):
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['put'][401])
+
+        """ User Active ? """
+        if AuthUser.active == False:
+            api.abort(403, __class__._responses['put'][403])
 
         """ parse request data """
         data = request.json
@@ -361,6 +369,10 @@ class BoardInstance(Resource):
         if AuthUser is None:
              api.abort(401, __class__._responses['delete'][401])
 
+        """ User Active ? """
+        if AuthUser.active == False:
+            api.abort(403, __class__._responses['delete'][403])       
+     
         """ logging """
         log.info('deactivate board: {!s}'.format(id))
 
@@ -387,37 +399,90 @@ class BoardInstance(Resource):
     
         return 200
 
-""" QR
-@api.route('/<int:id>/qr')
-@api.param('uuid', 'The unique identifier of a bulletin board')
+
+@api.route('/<int:id>/qrcode')
+@api.param('id', 'The unique identifier of a bulletin board')
 class BoardQRCode(Resource):
 
-    @api.expect(qr)
-    @api.doc('get_qrcode', security='basicauth')
-    @auth.basicauth.login_required
-    @api.response(401, 'Authentication Required')
-    @api.response(403, 'Insufficient rights')
-    @api.response(404, 'board not found')
-    def post(self, uuid):
+    _responses = {}
+    _responses['post'] = {200: ('Success', boarddetail),
+                          201: 'QR Code already exists',
+                          401: 'Missing Authentification or wrong credentials',
+                          403: 'Insufficient rights or Bad request',
+                          404: 'board not found'}
 
-        log.info('post_qrcode')
-        AuthUser = g.user
-        data = request.json
+
+    @api.doc('create a new qrcode for diboard', security='basicauth', responses=_responses['post'])
+    @auth.basicauth.login_required
+    @api.expect(qrnew)
+    @api.marshal_with(boarddetail)
+    def post(self, id):
+        """ create a new qrcode for diboard """
         
-        httpstatus, filename, filepath = create_qrcode(uuid, data, AuthUser)
-        
-        if  httpstatus == 401:
-            return 401, 'Authentication Required'
-        elif httpstatus == 403:
-            return 403, 'Insufficient rights'
-        elif httpstatus == 404:
-            return 404, 'board not found'
-        elif (filename is not None) and (filepath is not None):
-            # sendfile
-            log.debug(filepath)
-            log.debug(filename)
-            return send_from_directory(filepath, filename, as_attachment=True)
-        else:
-            api.abort(500)
-"""
+        """ retrieve authorized User """
+        AuthUser = g.get('user')
+        if AuthUser is None:
+             api.abort(401, __class__._responses['post'][401])
+
+        """ logging """
+        log.info('create a new qrcode for board: {!s}'.format(id))
+
+        """ User Active ? """
+        if AuthUser.active == False:
+            api.abort(403, __class__._responses['post'][403])
+
+        """ retrieve board """
+        diboard = Board.query.get(id)
+        if (diboard is None) or (not diboard.active):
+            api.abort(404, __class__._responses['post'][404])
+
+        """ check owner """
+        subscription = Subscription.query.get((AuthUser.id, id))
+        if subscription is None:
+            api.abort(403, __class__._responses['post'][403])
+        elif subscription.role not in ['OWNER', 'ADMIN']:
+            api.abort(403, __class__._responses['post'][403])
+
+        """ parse request data and init a Board instance and associate to user"""
+        data = request.get_json()
+        height = data.get('height')
+        width = data.get('width')
+        roundedges = data.get('roundedges')
+
+        if (height == 0) or (width == 0):
+            api.abort(403, __class__._responses['post'][403])
+
+        """ check if qrcode exist ? """
+        qrcode = QRcode.query.filter(QRcode.board_id == id, QRcode.height == height, QRcode.width == width, QRcode.roundedges == roundedges).first()
+        if not qrcode is None:
+            return diboard, 201
+
+        """ create qrcodes and save as png file """
+        qrpath = app.config['DIBOARDS_PATH_QR'] + str(id)
+        if not os.path.exists(qrpath):
+            os.makedirs(qrpath)
+            os.chmod(qrpath, 0o755)
+        qrpath = qrpath + '/'
+
+        qrfile = 'qr-' + str(height) + 'x' + str(width) + '-' + str(roundedges) + '.png'
+        qrfull = qrpath + qrfile
+
+        if (os.path.exists(qrfull)):
+            os.remove(qrfull)
+            
+        url = pyqrcode.create(qrfull)
+        url.png(qrfull, scale=10, module_color=(255, 45, 139, 255), background=(255, 255, 255, 255), quiet_zone=4)        
+       
+        qrcode = QRcode(height = height, width = width, roundedges = roundedges, file = qrfile, create_date = datetime.utcnow())
+        diboard.qrcodes.append(qrcode)
+
+        log.info('create a new qrcode for board: {!s}'.format(diboard.id))
+
+        """ db update """
+        db.session.add_all([diboard, qrcode])
+        db.session.commit()
+
+        return diboard, 200
+
+
 

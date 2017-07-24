@@ -296,8 +296,7 @@ class Activate(Resource):
         return 200
 
 
-"""
-    Password reset with secret answer (pwresetanswer_hash) to a pw reset question (pwresetquestion)
+""" Password reset with secret answer (pwresetanswer_hash) to a pw reset question (pwresetquestion)
     
     /pwreset [GET] send user id an pw reset question in the response body. Need user id or email/account
     /pwreset [POST] reset the user password and send the new one in the response body. Need user id or email/account AND the secret answer (pwresetanswer_hash)
@@ -316,13 +315,11 @@ class PwReset(Resource):
                         403: 'Insufficient rights e.g. User ist not activated',
                         404: 'User not found'
                         }
-
     _responses['post'] =    {
                             200: ('Success', user_new_pw),
                             403: 'Insufficient rights e.g. secret answer is not correct',
                             404: 'User not found'
                             }
-
 
     """ send pw reset question """
     @api.doc(description='request password reset question for an user identified by id or username', responses=_responses['get'])
