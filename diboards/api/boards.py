@@ -1,8 +1,7 @@
-from flask import request, g, send_from_directory
+from flask import request, g, send_from_directory, current_app as app
 from flask_restplus import Namespace, Resource, fields
 
 import auth
-from api.core import  delete_board, update_board, create_qrcode
 
 from database import db
 from database.models import User, Board, Subscription, QRcode
@@ -15,7 +14,7 @@ import pyqrcode
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
-api = Namespace('boards', description='bulletin board related operations')
+api = Namespace('board', description='bulletin board related operations')
 
 """ bord api models (object serializers)
 
@@ -28,12 +27,12 @@ api = Namespace('boards', description='bulletin board related operations')
 
 qrnew = api.model('Bulletin Board qrcode',{
     'width': fields.Integer(required=True, description='width of qr code in mm'),
-    'heigth': fields.Integer(required=True, description='height of qr code in mm'),
+    'height': fields.Integer(required=True, description='height of qr code in mm'),
     'roundedges': fields.Boolean(required=True, description='qr code with rounded edges (Style)')})
 
 qrdetail = api.model('Bulletin Board qrcode',{
     'width': fields.Integer(readOnly=True, required=True, description='width of qr code in mm'),
-    'heigth': fields.Integer(readOnly=True, required=True, description='height of qr code in mm'),
+    'height': fields.Integer(readOnly=True, required=True, description='height of qr code in mm'),
     'roundedges': fields.Boolean(readOnly=True, required=True, description='qr code with rounded edges (Style)'),
     'file': fields.String(readOnly=True, required=True, description='Board description'),
     'create_date': fields.DateTime(readOnly=True, required=True)})
@@ -208,9 +207,10 @@ class BoardList(Resource):
         """ logging """
         log.info('create a new board for user: {!s}'.format(AuthUser.id))
 
-        """ User Active ? """
+        """ User Active ? 
         if AuthUser.active == False:
             api.abort(403, __class__._responses['post'][403])
+        """
 
         """ parse request data an init a Board instance and associate to user"""
         data = request.json
@@ -225,16 +225,16 @@ class BoardList(Resource):
         db.session.commit()
 
         """ create qrcodes in 4x4 and save as png file """
-        qrpath = app.config['DIBOARDS_PATH_QR'] + board.id
+        qrpath = app.config['DIBOARDS_PATH_QR'] + str(board.id)
         if not os.path.exists(qrpath):
             os.makedirs(qrpath)
             os.chmod(qrpath, 0o755)
         qrpath = qrpath + '/'
 
-        qrfile = 'qr-'.join(random.choice(string.ascii_lowercase) for i in range(10)).join('.png')
+        qrfile = 'qr-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.png'
         qrfull = qrpath + qrfile
         while (os.path.exists(qrfull)):
-            qrfile = 'qr-'.join(random.choice(string.ascii_lowercase) for i in range(10)).join('.png')
+            qrfile = 'qr-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10)) + '.png'
             qrfull = qrpath + qrfile
 
         url = pyqrcode.create(qrfull)
@@ -289,15 +289,15 @@ class BoardInstance(Resource):
         log.info('select all board details for board: {!s}'.format(id))
 
         """ retrieve board """
-        diboard = database.models.Board.query.get(id)
+        diboard = Board.query.get(id)
         if (diboard is None) or (not diboard.active):
             api.abort(404, __class__._responses['get'][404])
 
         """ check owner """
-        subscription = database.models.Subscription.query.get((AuthUser.id, id))
+        subscription = Subscription.query.get((AuthUser.id, id))
         if subscription is None:
             api.abort(403, __class__._responses['get'][403])
-        elif subscription.roleid not in ['OWNER', 'ADMIN']:
+        elif subscription.role not in ['OWNER', 'ADMIN']:
             api.abort(403, __class__._responses['get'][403])
 
         """ return dibhoard """
@@ -333,7 +333,7 @@ class BoardInstance(Resource):
         subscription = Subscription.query.get((AuthUser.id, id))
         if subscription is None:
             api.abort(403, __class__._responses['put'][403])
-        elif subscription.roleid not in ['OWNER', 'ADMIN']:
+        elif subscription.role not in ['OWNER', 'ADMIN']:
             api.abort(403, __class__._responses['put'][403])
 
         """ update all fields """
@@ -373,7 +373,7 @@ class BoardInstance(Resource):
         subscription = Subscription.query.get((AuthUser.id, id))
         if subscription is None:
             api.abort(403, __class__._responses['delete'][403])
-        elif subscription.roleid not in ['OWNER', 'ADMIN']:
+        elif subscription.role not in ['OWNER', 'ADMIN']:
             api.abort(403, __class__._responses['delete'][403])
 
         """ update active = false == Deleted and deactivate als User subscriptions  """

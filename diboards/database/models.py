@@ -202,12 +202,11 @@ class User(db.Model):
 """        
 class QRcode(db.Model):
     __tablename__ = 'qrcodes'
-    id = db.Column(db.Integer, primary_key = True)
     board_id = db.Column(db.Integer, db.ForeignKey('board.id'), primary_key = True)
     
-    height = db.Column(db.Integer)
-    width = db.Column(db.Integer)
-    roundededges = db.Column(db.Boolean)
+    height = db.Column(db.Integer, primary_key = True)
+    width = db.Column(db.Integer, primary_key = True)
+    roundedges = db.Column(db.Boolean, primary_key = True)
     file = db.Column(db.String(50))
     
     create_date = db.Column(db.DateTime)
