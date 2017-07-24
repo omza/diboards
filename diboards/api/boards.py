@@ -1,14 +1,15 @@
 from flask import request, g, send_from_directory
-from flask_restplus import Namespace, Resource
+from flask_restplus import Namespace, Resource, fields
 
 import auth
-from api.core import list_boards, delete_board, read_board, update_board, create_qrcode
-from api.serializers import _board, _qr, _newboard, _boarddetail
+from api.core import  delete_board, update_board, create_qrcode
 
 from database import db
-from database.models import User, Board, Subscription
+from database.models import User, Board, Subscription, QRcode
 
+import os, random, string
 from datetime import datetime, timedelta
+import pyqrcode
 
 # Logger
 import logging
@@ -16,22 +17,135 @@ log = logging.getLogger('diboardapi.' + __name__)
 
 api = Namespace('boards', description='bulletin board related operations')
 
-board = api.model(_board['name'], _board['model'])
-boarddetail = api.model(_boarddetail['name'], _boarddetail['model'])
-boardnew = api.model(_newboard['name'], _newboard['model'])
+""" bord api models (object serializers)
 
-qr = api.model(_qr['name'], _qr['model'])
+    board = api.model(_board['name'], _board['model'])
+    boarddetail = api.model(_boarddetail['name'], _boarddetail['model'])
+    boardnew = api.model(_newboard['name'], _newboard['model'])
+    qr = api.model(_qr['name'], _qr['model'])
 
-# Endpoints
-# ------------------------------------------------------------------------------------------------
+"""
+
+qrnew = api.model('Bulletin Board qrcode',{
+    'width': fields.Integer(required=True, description='width of qr code in mm'),
+    'heigth': fields.Integer(required=True, description='height of qr code in mm'),
+    'roundedges': fields.Boolean(required=True, description='qr code with rounded edges (Style)')})
+
+qrdetail = api.model('Bulletin Board qrcode',{
+    'width': fields.Integer(readOnly=True, required=True, description='width of qr code in mm'),
+    'heigth': fields.Integer(readOnly=True, required=True, description='height of qr code in mm'),
+    'roundedges': fields.Boolean(readOnly=True, required=True, description='qr code with rounded edges (Style)'),
+    'file': fields.String(readOnly=True, required=True, description='Board description'),
+    'create_date': fields.DateTime(readOnly=True, required=True)})
+
+board = api.model('Bulletin Board public detail',{
+    'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
+    #'uuid': fields.String(readOnly=True, required=False, description='The unique identifier of a bulletin board'),
+    'name': fields.String(required=True, description='Board name'),
+    'description': fields.String(required=True, description='Board description'),
+    'state': fields.String(required=True, description='Board location state'),
+    'city': fields.String(required=True, description='Board location City'),
+    'zip': fields.String(required=True, description='Board location zip code'),
+    'street': fields.String(required=True, description='Board location street'),
+    'housenumber': fields.String(required=True, description='Board location House Number'),
+    'building': fields.String(required=True, description='Board location Building description'),
+    
+    'ownercompany': fields.String(required=True, description='Board owner Company'),
+    'ownercity': fields.String(required=True, description='Board owner City'),
+    'ownerstate': fields.String(required=True, description='Board owner state'),
+
+    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
+    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
+    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
+    #'gpstime': fields.DateTime(required=False),
+
+    #'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
+    #'qrcode': fields.String(required=False, description='Link to QR Code'),
+
+    'create_date': fields.DateTime(readOnly=True, required=False)})
+
+boarddetail = api.model('Bulletin Board all data',{
+    'id': fields.Integer(readOnly=True, required=False, description='The identifier of a bulletin board'),
+    'name': fields.String(required=True, description='Board name'),
+    'description': fields.String(required=True, description='Board description'),
+    'state': fields.String(required=True, description='Board location state'),
+    'city': fields.String(required=True, description='Board location City'),
+    'zip': fields.String(required=True, description='Board location zip code'),
+    'street': fields.String(required=True, description='Board location street'),
+    'housenumber': fields.String(required=True, description='Board location House Number'),
+    'building': fields.String(required=True, description='Board location Building description'),
+    
+    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
+    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
+    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
+    'gpstime': fields.DateTime(readOnly=True, required=False),
+
+    #'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
+
+    'create_date': fields.DateTime(readOnly=True, required=False),
+
+    'allowemail': fields.Boolean(required=False, description='Messenger eMail is allowed ?'),
+    'allowsms': fields.Boolean(required=False, description='Messenger SMS/MMS is allowed ?'),
+    'acceptsubsrequests': fields.Boolean(required=False, description='Should the Board allow subscriptions request from user'),
+                            
+    'ownercompany': fields.String(required=True, description='Board owner Company'),
+    'ownerfirstname': fields.String(required=True, description='Board owner first name'),
+    'ownerlastname': fields.String(required=True, description='Board owner last name'),
+    'ownercity': fields.String(required=True, description='Board owner City'),
+    'ownerzip': fields.String(required=True, description='Board owner zip code'),
+    'ownerstreet': fields.String(required=True, description='Board owner street'),
+    'ownerhousenumber': fields.String(required=True, description='Board owner House Number'),
+    'ownerstate': fields.String(required=True, description='Board owner state'),
+    
+    'qrcodes': fields.Nested(model=qrdetail, as_list=True)})
+
+boardnew = api.model('New Bulletin Board',{
+    'name': fields.String(required=True, description='Board name'),
+    'description': fields.String(required=True, description='Board description'),
+    'state': fields.String(required=True, description='Board location state'),
+    'city': fields.String(required=True, description='Board location City'),
+    'zip': fields.String(required=True, description='Board location zip code'),
+    'street': fields.String(required=True, description='Board location street'),
+    'housenumber': fields.String(required=True, description='Board location House Number'),
+    'building': fields.String(required=True, description='Board location Building description'),
+                    
+    'gpslong': fields.Float(required=False, description='Board location gps longitude'),
+    'gpslat': fields.Float(required=False, description='Board location gps latitude'),
+    'gpsele': fields.Float(required=False, description='Board location gps elevation'),
+    #'gpstime': fields.DateTime(required=False)
+                    
+    #'active': fields.Boolean(readOnly=True, required=False, description='Board is activated ?'),
+    #'qrcode': fields.String(required=False, description='Link to QR Code'),
+    #'create_date': fields.DateTime(readOnly=True, required=False),
+
+    'allowemail': fields.Boolean(required=True, description='Messenger eMail is allowed ?'),
+    'allowsms': fields.Boolean(required=True, description='Messenger SMS/MMS is allowed ?'),
+    'acceptsubsrequests': fields.Boolean(required=True, description='Should the Board allow subscriptions request from user'),
+
+    'ownercompany': fields.String(required=True, description='Board owner Company'),
+    'ownerfirstname': fields.String(required=True, description='Board owner first name'),
+    'ownerlastname': fields.String(required=True, description='Board owner last name'),
+    'ownercity': fields.String(required=True, description='Board owner City'),
+    'ownerzip': fields.String(required=True, description='Board owner zip code'),
+    'ownerstreet': fields.String(required=True, description='Board owner street'),
+    'ownerhousenumber': fields.String(required=True, description='Board owner House Number'),
+    'ownerstate': fields.String(required=True, description='Board owner state')})
+
+
+""" Endpoints
+
+    / : BoardList
+
+    /<id:int> : BoardInstance
+"""
 
 @api.route('/')
-class BoardCollection(Resource):
+class BoardList(Resource):
 
     # swagger responses   
     _responses = {}
     _responses['get'] = {200: ('Success', board),
-                  401: 'Missing Authentification or wrong credentials',
+                  #401: 'Missing Authentification or wrong credentials',
                   403: 'Insufficient rights or Bad request',
                   404: 'No Boards found'
                   }
@@ -41,22 +155,38 @@ class BoardCollection(Resource):
                   }
 
     # list/filter boards (public)
-    @api.doc(description='list boards with filters', responses=_responses['get'])
+    @api.doc(description='request Bulletin Boards by filter (id, address)', responses=_responses['get'])
     @api.param(name = 'id', description = 'filter for a single board with unique board id', type = int)
+    @api.param(name = 'zip', description = 'filter by zip code', type = str)
+    @api.param(name = 'city', description = 'filter by city name', type = str)
+    @api.param(name = 'street', description = 'filter by street', type = str)
     @api.marshal_list_with(board)
     def get(self):
 
-        #retrieve boardlist
-        httpstatus, diboards = list_boards(request.args.copy())
+        """ list boards with filters """
+        # concat filters
+        boardsfilter = ''
+        for key, value in request.args.items():            
+            try:
+                if key == 'id':
+                    boardsfilter = boardsfilter + 'board.' + key + ' == ' + str(value) + ' AND '
+                else:
+                    boardsfilter = boardsfilter + 'board.' + key + ' == \'' + str(value) + '\' AND '
+            
+            except:
+                api.abort(403, __class__._responses['get'][403])
+        boardsfilter = boardsfilter[:-5]       
+        
+        log.info('retrieve board list with filters {!s}'.format(boardsfilter)) 
+
+        """ retrieve Boards with filters """
+        if Board.query.filter(Board.active, boardsfilter).count() == 0:
+            api.abort(404, __class__._responses['get'][404])
 
         # return httpstatus, object
-        if httpstatus in BoardCollection._responses['get']:
-            if httpstatus == 200:
-                return diboards, 200
-            else:
-                api.abort(httpstatus, __class__._responses['get'][httpstatus])
-        else:
-            api.abort(500)
+        boardlist = Board.query.filter(Board.active, boardsfilter).all()
+        return boardlist, 200  
+
 
     #new board
     @api.doc(description='create an new Board and subscribe user as owner', security='basicauth', responses=_responses['post'])
@@ -66,9 +196,14 @@ class BoardCollection(Resource):
     def post(self):
         
         """ create a diboard """
+        
+        """ retrieve authorized User """
         AuthUser = g.get('user')
         if AuthUser is None:
              api.abort(401, __class__._responses['post'][401])
+        
+        """ parse request data """
+        data = request.json
 
         """ logging """
         log.info('create a new board for user: {!s}'.format(AuthUser.id))
@@ -89,12 +224,38 @@ class BoardCollection(Resource):
         db.session.add_all([board, subscription])
         db.session.commit()
 
+        """ create qrcodes in 4x4 and save as png file """
+        qrpath = app.config['DIBOARDS_PATH_QR'] + board.id
+        if not os.path.exists(qrpath):
+            os.makedirs(qrpath)
+            os.chmod(qrpath, 0o755)
+        qrpath = qrpath + '/'
+
+        qrfile = 'qr-'.join(random.choice(string.ascii_lowercase) for i in range(10)).join('.png')
+        qrfull = qrpath + qrfile
+        while (os.path.exists(qrfull)):
+            qrfile = 'qr-'.join(random.choice(string.ascii_lowercase) for i in range(10)).join('.png')
+            qrfull = qrpath + qrfile
+
+        url = pyqrcode.create(qrfull)
+        url.png(qrfull, scale=10, module_color=(255, 45, 139, 255), background=(255, 255, 255, 255), quiet_zone=4)        
+        
+        
+        qrcode = QRcode(height = 40, width = 40, roundedges = False, file = qrfile, create_date = datetime.utcnow())
+        board.qrcodes.append(qrcode)
+
+        log.info('create a new qrcode for board: {!s}'.format(board.id))
+
+        """ db update """
+        db.session.add_all([board, qrcode])
+        db.session.commit()
+
         return board, 200
 
 
 @api.route('/<int:id>')
 @api.param('id', 'The unique identifier of a bulletin board')
-class BoardItem(Resource):
+class BoardInstance(Resource):
 
     # swagger responses   
     _responses = {}
@@ -116,17 +277,31 @@ class BoardItem(Resource):
     @auth.basicauth.login_required
     @api.marshal_with(boarddetail)
     def get(self, id):
-        AuthUser = g.user
-        httpstatus, diboard = read_board(id, AuthUser )
 
-        # return httpstatus, object
-        if httpstatus in __class__._responses['get']:
-            if httpstatus == 200:
-                return diboard, 200
-            else:
-                api.abort(httpstatus, __class__._responses['get'][httpstatus])
-        else:
-            api.abort(500)
+        """ request board detail data """
+
+        """ retrieve authorized User """
+        AuthUser = g.get('user')
+        if AuthUser is None:
+             api.abort(401, __class__._responses['get'][401])
+
+        """ logging """
+        log.info('select all board details for board: {!s}'.format(id))
+
+        """ retrieve board """
+        diboard = database.models.Board.query.get(id)
+        if (diboard is None) or (not diboard.active):
+            api.abort(404, __class__._responses['get'][404])
+
+        """ check owner """
+        subscription = database.models.Subscription.query.get((AuthUser.id, id))
+        if subscription is None:
+            api.abort(403, __class__._responses['get'][403])
+        elif subscription.roleid not in ['OWNER', 'ADMIN']:
+            api.abort(403, __class__._responses['get'][403])
+
+        """ return dibhoard """
+        return diboard, 200
     
             
     """ update board """
@@ -136,39 +311,83 @@ class BoardItem(Resource):
     @api.marshal_with(boarddetail)
     def put(self, id):
         
-        AuthUser = g.user
+        """ update board detail data """
+
+        """ retrieve authorized User """
+        AuthUser = g.get('user')
+        if AuthUser is None:
+             api.abort(401, __class__._responses['put'][401])
+
+        """ parse request data """
         data = request.json
 
-        httpstatus, diboard = update_board(id, data, AuthUser)
+        """ logging """
+        log.info('select all board details for board: {!s}'.format(id))
 
-        # return httpstatus, object
-        if httpstatus in __class__._responses['put']:
-            if httpstatus == 200:
-                return diboard, 200
-            else:
-                api.abort(httpstatus, __class__._responses['put'][httpstatus])
-        else:
-            api.abort(500)
+        """ retrieve board """
+        diboard = Board.query.get(id)
+        if (diboard is None) or (not diboard.active):
+            api.abort(404, __class__._responses['put'][404])
+
+        """ check owner """
+        subscription = Subscription.query.get((AuthUser.id, id))
+        if subscription is None:
+            api.abort(403, __class__._responses['put'][403])
+        elif subscription.roleid not in ['OWNER', 'ADMIN']:
+            api.abort(403, __class__._responses['put'][403])
+
+        """ update all fields """
+        for key, value in data.items():
+            if (key in vars(diboard)):
+                setattr(diboard, key, value)
+    
+        """ update database """
+        db.session.add(diboard)
+        db.session.commit()
+               
+        """ return diboard """
+        return diboard, 200
+
 
     """ delete board """
     @api.doc(description='owner or administrator delete their board', security='basicauth', responses=_responses['delete'])
     @auth.basicauth.login_required
     def delete(self, id):
         
-        AuthUser = g.user
+        """ delete/deactivate board """
 
-        """ delete Board """
-        httpstatus = delete_board(id, AuthUser)
+        """ retrieve authorized User """
+        AuthUser = g.get('user')
+        if AuthUser is None:
+             api.abort(401, __class__._responses['delete'][401])
 
-        """ return httpstatus, object  """
-        if httpstatus in __class__._responses['delete']:
-            if httpstatus == 200:
-                return diboard, 200
-            else:
-                api.abort(httpstatus, __class__._responses['delete'][httpstatus])
-        else:
-            api.abort(500)
+        """ logging """
+        log.info('deactivate board: {!s}'.format(id))
 
+        """ retrieve board """
+        diboard = Board.query.get(id)
+        if (diboard is None) or (not diboard.active):
+            api.abort(404, __class__._responses['delete'][404])
+
+        """ check owner """
+        subscription = Subscription.query.get((AuthUser.id, id))
+        if subscription is None:
+            api.abort(403, __class__._responses['delete'][403])
+        elif subscription.roleid not in ['OWNER', 'ADMIN']:
+            api.abort(403, __class__._responses['delete'][403])
+
+        """ update active = false == Deleted and deactivate als User subscriptions  """
+        diboard.active = False
+        db.session.query(Subscription).filter(Subscription.roleid == 'USER').update({Subscription.active: False})
+
+    
+        """ update database """
+        db.session.add(diboard)
+        db.session.commit()
+    
+        return 200
+
+""" QR
 @api.route('/<int:id>/qr')
 @api.param('uuid', 'The unique identifier of a bulletin board')
 class BoardQRCode(Resource):
@@ -200,5 +419,5 @@ class BoardQRCode(Resource):
             return send_from_directory(filepath, filename, as_attachment=True)
         else:
             api.abort(500)
-
+"""
 

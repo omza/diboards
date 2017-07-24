@@ -19,8 +19,9 @@ SQLALCHEMY_COMMIT_ON_TEARDOWN = True
 # di.boards settings
 DIBOARDS_VERSION = 'v0.1'
 DIBOARDS_PATH_TERMSOFSERVICE = 'https://diboards.com/legal/diboards_agb_v201707.pdf'
-DIBOARDS_PATH_INCOMMING = '/usr/incomming/'
-DIBOARDS_PATH_OUTGOING = '/usr/outgoing/'
+DIBOARDS_PATH_UPLOAD = '/tmp/'
+DIBOARDS_PATH_MESSAGE = '/usr/messages/'
+DIBOARDS_PATH_QR = '/usr/qr/'
 DIBOARDS_PATH_LOG = '/usr/log/'
 DIBOARDS_LOGLEVEL_CONSOLE = 0 # Notset 
 DIBOARDS_LOGLEVEL_FILE = 40 # Error

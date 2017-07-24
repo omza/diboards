@@ -15,9 +15,9 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///database/db.diboards'
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 # di.boards settings
+DIBOARDS_PATH_UPLOAD = 'E:/Source/Repos/diboards/log/'
+DIBOARDS_PATH_MESSAGE = 'E:/Source/Repos/diboards/log/'
 DIBOARDS_PATH_QR = 'E:/Source/Repos/diboards/log/'
-DIBOARDS_PATH_INCOMMING = 'E:/Source/Repos/diboards/log/'
-DIBOARDS_PATH_OUTGOING = 'E:/Source/Repos/diboards/log/'
 DIBOARDS_PATH_LOG = 'E:/Source/Repos/diboards/log/'
 DIBOARDS_LOGLEVEL_CONSOLE = 10 # debug 
 DIBOARDS_LOGLEVEL_FILE = 10 # debug

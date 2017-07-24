@@ -11,8 +11,7 @@ import re
 import logging
 log = logging.getLogger('diboardapi.' + __name__)
 
-"""
-    subscription db model
+""" subscription db model
     -------------------------------------------------------------------------
 """
 class Subscription(db.Model):
@@ -30,8 +29,7 @@ class Subscription(db.Model):
     board = db.relationship('Board', back_populates="users")
 
 
-""" 
-   Board db model
+""" Board db model
    -------------------------------------------------------------------------
 """
 class Board(db.Model):
@@ -77,7 +75,8 @@ class Board(db.Model):
     ownerhousenumber = db.Column(db.String(10))
     
     users = db.relationship("Subscription", back_populates="board")
-    
+    qrcodes = db.relationship("QRcode", back_populates="board") 
+
     def __init__(self, data):
         
         """ auto keys """
@@ -95,8 +94,7 @@ class Board(db.Model):
         for key, value in vars(self).items():   
             log.info('Board {} - member: {} = {!s}'.format(self.uuid,key,value))
                
-""" 
-   user db model
+""" user db model
    -------------------------------------------------------------------------
 """
 class User(db.Model):
@@ -198,8 +196,23 @@ class User(db.Model):
             
         for key, value in vars(self).items():   
             log.info('User {} - member: {} = {!s}'.format(self.uuid,key,value))
-        
 
+""" qr db model
+   -------------------------------------------------------------------------
+"""        
+class QRcode(db.Model):
+    __tablename__ = 'qrcodes'
+    id = db.Column(db.Integer, primary_key = True)
+    board_id = db.Column(db.Integer, db.ForeignKey('board.id'), primary_key = True)
+    
+    height = db.Column(db.Integer)
+    width = db.Column(db.Integer)
+    roundededges = db.Column(db.Boolean)
+    file = db.Column(db.String(50))
+    
+    create_date = db.Column(db.DateTime)
+
+    board = db.relationship('Board', back_populates="qrcodes")
 
 
 

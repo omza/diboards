@@ -14,6 +14,8 @@ RUN mkdir -p /usr/src/app \
 	&& mkdir -p /usr/db \
 	&& mkdir -p /usr/log \
 	&& mkdir -p /tmp \
+	&& mkdir -p /usr/messages \
+	&& mkdir -p /usr/qr \
 	&& mkdir -p /secrets
 
 WORKDIR /usr/src/app
@@ -25,6 +27,8 @@ VOLUME /usr/src/app/
 VOLUME /usr/db/
 VOLUME /usr/log/
 VOLUME /secrets/
+VOLUME /usr/messages/
+VOLUME /usr/qr/
 
 
 # Install requirements
