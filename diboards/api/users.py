@@ -244,7 +244,7 @@ class UserInstance(Resource):
 @api.route('/activate')
 @api.param(name = 'id', description = 'The unique identifier of a di.board user',type = int, required=True)
 @api.param(name='email', description='emailaddress to activate', type=str, required=True)
-@api.param(name='termsofserviceaccepted', description='does user accept known terms of service', type=bool, required=True)
+#@api.param(name='termsofserviceaccepted', description='does user accept known terms of service', type=bool, required=True)
 class Activate(Resource):
 
     # response codes
@@ -261,11 +261,11 @@ class Activate(Resource):
         try:
             id = request.args.get('id',default=0, type=int)
             email = request.args.get('email',default='', type=str)
-            termsofserviceaccepted = request.args.get('termsofserviceaccepted',default=False, type=bool)
+            termsofserviceaccepted = True #request.args.get('termsofserviceaccepted',default=False, type=bool)
         except ValueError:
             id = 0
             email = ''
-            termsofserviceaccepted  = False
+            termsofserviceaccepted  = True
         
         log.info('activate id:{!s} and email:{}'.format(id,email))
 
